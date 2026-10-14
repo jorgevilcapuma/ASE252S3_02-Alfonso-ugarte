@@ -1,0 +1,16 @@
+# Perfil "local": el backend funciona sin Docker ni SQL Server, con una base H2 guardada en ./datos-local.
+#   mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+# Las tablas se crean desde las entidades y se cargan los mismos datos de demostración.
+spring:
+  datasource:
+    url: jdbc:h2:file:./datos-local/ugartino;MODE=MSSQLServer;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;AUTO_SERVER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true          # http://localhost:8080/h2-console (JDBC URL de arriba, usuario sa, sin contraseña)
+      path: /h2-console

@@ -1,0 +1,51 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true        # Content-Type: application/json;charset=UTF-8 (tildes y ñ en cualquier cliente)
+
+spring:
+  application:
+    name: ugartino-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:sqlserver://localhost:1434;databaseName=ugartino_db;encrypt=true;trustServerCertificate=true}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:Admin12345}
+  jpa:
+    hibernate:
+      # Las tablas las crea database/init/01_esquema.sql; "validate" comprueba que las entidades coincidan.
+      ddl-auto: ${DDL_AUTO:validate}
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        type:
+          prefer_nationalized_strings: true   # NVARCHAR en SQL Server (tildes y ñ)
+        jdbc:
+          batch_size: 200
+        order_inserts: true
+  jackson:
+    time-zone: America/Lima
+    default-property-inclusion: non_null
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  zona-horaria: ${ZONA_HORARIA:America/Lima}           # define el "hoy" de la asistencia aunque el servidor esté en UTC
+  cors-origins: ${CORS_ORIGINS:http://localhost:4200}
+  seguridad:
+    secreto: ${TOKEN_SECRETO:cambia-este-secreto-en-produccion-ugartino-2026}
+    horas-sesion: ${HORAS_SESION:10}
+    contrasena-inicial: ${CONTRASENA_INICIAL:123456}  # para cuentas creadas sin contraseña
+  alertas:
+    ventana-dias: 20        # días hábiles en los que se acumulan faltas
+    faltas-criticas: 3
+    faltas-preventivas: 2
+  datos-demo:
+    habilitado: ${DATOS_DEMO:true}   # carga catálogos y datos de ejemplo si la base está vacía
+    dias-historial: ${DIAS_HISTORIAL:22}
