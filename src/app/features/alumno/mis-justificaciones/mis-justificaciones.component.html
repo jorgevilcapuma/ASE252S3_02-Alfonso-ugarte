@@ -1,0 +1,170 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">MI ASISTENCIA</span>
+    <h1>Justificaciones</h1>
+    <p>Solicita revisar una inasistencia y consulta la respuesta del colegio.</p>
+  </div>
+  <button class="button button-primary" type="button" (click)="abrirFormulario()">
+    ＋ Nueva solicitud
+  </button>
+</div>
+
+<div class="student-stats-grid justification-stats">
+  <article class="student-stat-card">
+    <div>
+      <span>PENDIENTES</span>
+      <b class="student-stat-icon gold-stat">◷</b>
+    </div>
+    <strong>{{ pendientes }}</strong>
+    <p>Esperan revisión del personal</p>
+  </article>
+
+  <article class="student-stat-card">
+    <div>
+      <span>APROBADAS</span>
+      <b class="student-stat-icon green-stat">✓</b>
+    </div>
+    <strong>{{ aprobadas }}</strong>
+    <p>Faltas justificadas</p>
+  </article>
+
+  <article class="student-stat-card">
+    <div>
+      <span>RECHAZADAS</span>
+      <b class="student-stat-icon red-stat">!</b>
+    </div>
+    <strong>{{ rechazadas }}</strong>
+    <p>Revisa la observación recibida</p>
+  </article>
+</div>
+
+<section class="panel student-justification-panel">
+  <div class="student-panel-heading">
+    <div>
+      <span class="eyebrow">SEGUIMIENTO</span>
+      <h2>Mis solicitudes</h2>
+    </div>
+
+    <label class="student-filter-label">
+      Estado
+      <select [(ngModel)]="filtro">
+        <option value="Todas">Todas</option>
+        <option value="Pendiente">Pendientes</option>
+        <option value="Aprobada">Aprobadas</option>
+        <option value="Observada">Rechazadas</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="student-requests-table">
+    <div class="student-request-table-head">
+      <span>FECHA</span>
+      <span>MOTIVO / CURSO</span>
+      <span>SUSTENTO</span>
+      <span>ESTADO</span>
+    </div>
+
+    @for (item of solicitudes; track item.id) {
+      <article class="student-request-table-row">
+        <div>{{ formatearFecha(item.fecha) }}</div>
+        <div>
+          <strong>{{ item.motivo }}</strong>
+          <small>{{ obtenerNombreCurso(item.cursoId) }}</small>
+          @if (item.observacion) {
+            <em>{{ item.observacion }}</em>
+          }
+        </div>
+        <div>{{ item.archivoNombre || 'Sin archivo' }}</div>
+        <div>
+          <span
+            class="review-status"
+            [class.review-pending]="item.estado === 'Pendiente'"
+            [class.review-approved]="item.estado === 'Aprobada'"
+            [class.review-observed]="item.estado === 'Observada'"
+          >
+            {{ etiquetaEstado(item.estado) }}
+          </span>
+        </div>
+      </article>
+    } @empty {
+      <div class="student-empty">
+        <span>▧</span>
+        <strong>No hay solicitudes en este filtro</strong>
+        <p>Las solicitudes y respuestas aparecerán aquí.</p>
+      </div>
+    }
+  </div>
+</section>
+
+<div class="notice-box student-demo-note">
+  <div class="notice-icon">i</div>
+  <div>
+    <strong>Revisión del colegio</strong>
+    <p>Enviar la solicitud no cambia la asistencia. El estado oficial solo cambia cuando el personal revisa el caso.</p>
+  </div>
+</div>
+
+@if (mensaje) {
+  <div class="toast" [class.toast-success]="tipoMensaje === 'success'" role="status">
+    {{ mensaje }}
+  </div>
+}
+
+@if (mostrarFormulario) {
+  <div class="modal-backdrop" (click)="mostrarFormulario = false">
+    <section
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="request-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow">SOLICITUD DE REVISIÓN</span>
+          <h2 id="request-title">Nueva justificación</h2>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="mostrarFormulario = false">×</button>
+      </div>
+
+      <p class="modal-description">El personal del colegio revisará el motivo y el sustento enviado.</p>
+
+      <label>
+        Fecha de inasistencia
+        <input type="date" [(ngModel)]="fecha" [max]="alumno.hoy" required />
+      </label>
+
+      <label>
+        Curso
+        <select [(ngModel)]="cursoId">
+          <option value="">Asistencia general</option>
+          @for (curso of alumno.cursos; track curso.id) {
+            <option [value]="curso.id">{{ curso.nombre }} · {{ curso.seccion }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Motivo
+        <textarea rows="3" [(ngModel)]="motivo" maxlength="300" placeholder="Describe brevemente el motivo"></textarea>
+      </label>
+
+      <label class="file-picker">
+        Sustento (opcional)
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="seleccionarArchivo($event)" />
+        <small>{{ archivoNombre || 'PDF, JPG o PNG · Máximo 5 MB' }}</small>
+      </label>
+
+      @if (mensaje && tipoMensaje === 'error') {
+        <p class="login-error" role="alert">{{ mensaje }}</p>
+      }
+
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" (click)="mostrarFormulario = false">Cancelar</button>
+        <button class="button button-primary" type="button" [disabled]="enviando" (click)="enviar()">{{ enviando ? 'Enviando…' : 'Enviar solicitud' }}</button>
+      </div>
+
+      <small class="student-local-file-note">Se registra el nombre del archivo; entrega el documento original al colegio si te lo solicitan.</small>
+    </section>
+  </div>
+}

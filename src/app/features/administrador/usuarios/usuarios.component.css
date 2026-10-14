@@ -1,0 +1,5 @@
+.users-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.users-filters .search-box { width: 260px; }
+.users-filters .search-box input { min-height: 40px; border-radius: 999px; }
+.users-panel { margin-top: 20px; }
+@media (max-width: 640px) { .users-filters .search-box { width: 100%; } }

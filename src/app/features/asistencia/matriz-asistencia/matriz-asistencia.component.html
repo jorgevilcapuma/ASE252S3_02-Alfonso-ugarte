@@ -1,0 +1,186 @@
+<nav class="crumbs" aria-label="Ruta">
+  <a class="crumbs-back" routerLink="../secciones" [queryParams]="{ nivel, grado }" aria-label="Volver a la selección de sección"><app-icono nombre="atras" [tamano]="20" /></a>
+  <a routerLink="../secciones" [queryParams]="{ nivel, grado }">Selección de sección</a>
+  <app-icono nombre="derecha" [tamano]="14" />
+  <strong>{{ etiquetaAula }}</strong>
+</nav>
+
+<div class="page-intro">
+  <div>
+    <h1>Matriz transaccional de asistencia</h1>
+    <p>Vista detallada por sección: registro del día y resumen mensual.</p>
+  </div>
+  <div class="page-actions">
+    <div class="chip-filter" role="tablist" aria-label="Tipo de vista">
+      <button type="button" role="tab" [attr.aria-selected]="vista === 'diaria'" [class.is-active]="vista === 'diaria'" (click)="cambiarVista('diaria')">Registro diario</button>
+      <button type="button" role="tab" [attr.aria-selected]="vista === 'mensual'" [class.is-active]="vista === 'mensual'" (click)="cambiarVista('mensual')">Vista mensual</button>
+    </div>
+    <button class="button button-olive" type="button" (click)="exportar()"><app-icono nombre="descargar" [tamano]="18" /> Exportar</button>
+  </div>
+</div>
+
+<section class="panel filters-panel">
+  <div class="filter-control"><label for="nivel">Nivel</label>
+    <select id="nivel" [(ngModel)]="nivel" (ngModelChange)="cambiarNivel()">@for (opcion of data.niveles; track opcion) { <option [value]="opcion">{{ opcion }}</option> }</select>
+  </div>
+  <div class="filter-control"><label for="grado">Grado</label>
+    <select id="grado" [(ngModel)]="grado" (ngModelChange)="sincronizarUrl()">@for (opcion of grados; track opcion) { <option [value]="opcion">{{ opcion }}{{ nivel === 'Inicial' ? '' : '°' }}</option> }</select>
+  </div>
+  <div class="filter-control"><label for="seccion">Sección</label>
+    <select id="seccion" [(ngModel)]="seccion" (ngModelChange)="sincronizarUrl()">@for (opcion of data.secciones; track opcion) { <option [value]="opcion">Sección {{ opcion }} · {{ data.turnoSeccion(opcion) }}</option> }</select>
+  </div>
+  @if (vista === 'diaria') {
+    <div class="filter-control"><label for="fecha">Fecha</label><input id="fecha" type="date" [(ngModel)]="fecha" (ngModelChange)="cargar()" [max]="data.hoy"></div>
+  } @else {
+    <div class="filter-control"><label for="mes">Mes</label><input id="mes" type="month" [(ngModel)]="mes" (ngModelChange)="cargar()" [max]="data.hoy.slice(0, 7)"></div>
+  }
+  <div class="filter-control"><label for="buscar">Buscar estudiante</label>
+    <span class="search-box"><app-icono nombre="buscar" [tamano]="18" /><input id="buscar" type="search" [(ngModel)]="busqueda" placeholder="Nombre o DNI"></span>
+  </div>
+</section>
+
+@if (vista === 'mensual') {
+  @let k = kpis;
+  <div class="kpi-row">
+    <article class="kpi">
+      <div><span class="kpi-label">Asistencia promedio</span><strong>{{ k.promedio | number:'1.0-1':'es-PE' }}%</strong>
+        @if (k.variacion !== null) {
+          <span [class]="k.variacion >= 0 ? 'trend-up' : 'trend-down'"><app-icono nombre="tendencia" [tamano]="14" /> {{ k.variacion >= 0 ? '+' : '' }}{{ k.variacion | number:'1.0-1':'es-PE' }}% vs mes anterior</span>
+        } @else { <span class="kpi-note">{{ k.dias }} días lectivos registrados</span> }
+      </div>
+      <span class="gauge is-green" [style.--valor]="k.promedio">{{ k.promedio | number:'1.0-0' }}%</span>
+    </article>
+    <article class="kpi">
+      <div><span class="kpi-label">Total inasistencias</span><strong>{{ k.inasistencias }}</strong><span class="kpi-note">En el periodo seleccionado</span></div>
+      <div class="split"><span class="bubble is-red">{{ k.faltas }}</span><small>Faltas</small><span class="bubble is-gold">{{ k.justificadas }}</span><small>Just.</small></div>
+    </article>
+    <article class="kpi">
+      <div><span class="kpi-label">Tardanzas</span><strong>{{ k.tardanzas }}</strong>
+        @if (k.tardanzas > estudiantes.length) { <span class="trend-down"><app-icono nombre="alerta" [tamano]="14" /> Requiere atención</span> } @else { <span class="kpi-note">Dentro de lo esperado</span> }
+      </div>
+      <span class="diamond"><span>{{ k.tardanzas }}</span></span>
+    </article>
+  </div>
+
+  <section class="panel table-panel month-panel">
+    <div class="table-toolbar">
+      <div><h3>Registro {{ mes + '-01' | date:'MMMM y':'':'es-PE' }} · {{ data.etiquetaGrado(nivel, grado) }} "{{ seccion }}"</h3><p>Haz clic en una celda para cambiar el estado del día.</p></div>
+      <div class="legend">
+        <span><i class="legend-dot dot-green"></i>Presente</span><span><i class="legend-dot dot-red"></i>Falta</span>
+        <span><i class="legend-dot dot-gold"></i>Tarde</span><span><i class="legend-dot dot-blue"></i>Justificado</span><span><i class="legend-dot dot-gray"></i>Sin clase</span>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="month-table">
+        <thead>
+          <tr>
+            <th class="sticky-n">N°</th>
+            <th class="sticky-name">Estudiante</th>
+            @for (dia of columnas; track dia.fecha) {
+              <th class="day" [class.is-off]="dia.noLectivo" [class.is-today]="dia.hoy"><b>{{ dia.numero }}</b><small>{{ dia.semana }}</small></th>
+            }
+            <th class="num">Total %</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (estudiante of filtrados; track estudiante.id; let i = $index) {
+            @let porcentaje = porcentajeEstudiante(estudiante.id);
+            <tr>
+              <td class="sticky-n number-col">{{ i + 1 }}</td>
+              <td class="sticky-name"><div class="student-cell"><span class="avatar student-avatar">{{ iniciales(estudiante.nombre) }}</span><strong>{{ estudiante.nombre }}</strong></div></td>
+              @for (dia of columnas; track dia.fecha) {
+                @if (dia.noLectivo || dia.futuro) {
+                  <td class="day" [class.is-off]="dia.noLectivo"></td>
+                } @else {
+                  @let e = data.obtenerEstado(estudiante.id, dia.fecha);
+                  <td class="day" [class.is-today]="dia.hoy">
+                    <button type="button" class="cell" [attr.data-estado]="e" [title]="etiquetaEstado(e) + ' · ' + (dia.fecha | date:'d MMM':'':'es-PE')" (click)="alternarCelda(estudiante, dia)">{{ letra[e] }}</button>
+                  </td>
+                }
+              }
+              <td class="num total" [class.is-low]="porcentaje !== null && porcentaje < 85">{{ porcentaje === null ? '—' : (porcentaje | number:'1.0-0') + '%' }}</td>
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="columnas.length + 3" class="empty-state">No hay estudiantes que coincidan.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-foot"><span>Desliza horizontalmente para ver todos los días del mes.</span><span>% = días sin falta / días registrados</span></div>
+  </section>
+} @else {
+  <div class="attendance-summary">
+    <div><strong>{{ etiquetaAula }}</strong><span>{{ estudiantes.length }} estudiantes · {{ fecha | date:"EEEE d 'de' MMMM y":'':'es-PE' }}</span></div>
+    <div class="summary-pills">
+      <span class="summary-pill present-pill">{{ contar('presente') }} presentes</span>
+      <span class="summary-pill pending-pill">{{ contar('tardanza') }} tardanzas</span>
+      <span class="summary-pill absent-pill">{{ contar('falta') }} faltas</span>
+      <span class="summary-pill badge-info">{{ contar('justificado') }} justificados</span>
+      <span class="summary-pill badge-neutral">{{ contar('pendiente') }} sin registrar</span>
+    </div>
+  </div>
+
+  @if (esFuturo) {
+    <p class="login-error" role="alert">La fecha seleccionada es futura: solo puedes consultar, no registrar.</p>
+  }
+
+  <section class="panel table-panel">
+    <div class="table-toolbar">
+      <div><h3>Registro del aula</h3><p>Pulsa P, T, F o J para cada estudiante. Pulsa de nuevo para quitar el registro.</p></div>
+      <div class="page-actions">
+        <button class="button button-subtle" type="button" (click)="abrirJustificacion()"><app-icono nombre="justificacion" [tamano]="16" /> Nueva justificación</button>
+        <button class="button button-primary" type="button" (click)="marcarTodos()" [disabled]="esFuturo"><app-icono nombre="check" [tamano]="16" /> Marcar pendientes como presentes</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>N°</th><th>Estudiante</th><th>DNI</th><th>Estado</th><th>Registro</th><th>Seguimiento</th></tr></thead>
+        <tbody>
+          @for (estudiante of filtrados; track estudiante.id; let indice = $index) {
+            @let actual = estado(estudiante.id);
+            <tr>
+              <td class="number-col">{{ (indice + 1).toString().padStart(2, '0') }}</td>
+              <td><div class="student-cell"><div class="avatar student-avatar">{{ iniciales(estudiante.nombre) }}</div><strong>{{ estudiante.nombre }}</strong></div></td>
+              <td class="muted">{{ estudiante.dni }}</td>
+              <td><span class="summary-pill" [class]="'status-' + actual">{{ etiquetaEstado(actual) }}</span></td>
+              <td>
+                <div class="state-toggle" role="group" [attr.aria-label]="'Asistencia de ' + estudiante.nombre">
+                  @for (opcion of estadosRegistro; track opcion) {
+                    <button type="button" [attr.data-estado]="opcion" [class.is-on]="actual === opcion" [attr.aria-pressed]="actual === opcion" [title]="etiquetaEstado(opcion)" [disabled]="esFuturo" (click)="actualizar(estudiante.id, opcion)">{{ letra[opcion] }}</button>
+                  }
+                </div>
+              </td>
+              <td><button class="row-action" type="button" (click)="abrirJustificacion(estudiante.id)">{{ actual === 'falta' || actual === 'tardanza' ? 'Justificar' : 'Añadir nota' }}</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-state">{{ busqueda ? 'No hay estudiantes que coincidan con la búsqueda.' : 'No hay estudiantes en esta sección.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-foot">
+      <span><i class="legend-dot dot-green"></i>Presente <i class="legend-dot dot-gold"></i>Tardanza <i class="legend-dot dot-red"></i>Falta <i class="legend-dot dot-blue"></i>Justificado</span>
+      <span>Los cambios se guardan automáticamente.</span>
+    </div>
+  </section>
+}
+
+@if (mostrarFormulario) {
+  <div class="modal-backdrop" (click)="mostrarFormulario = false">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-justificacion" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">ASISTENCIA · {{ fecha | date:'d MMM y':'':'es-PE' }}</span><h2 id="titulo-justificacion">Nueva justificación</h2></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="mostrarFormulario = false"><app-icono nombre="cerrar" [tamano]="18" /></button>
+      </div>
+      <p class="modal-description">Registra el motivo informado por la familia. Quedará pendiente de revisión.</p>
+      <label>Estudiante
+        <select [(ngModel)]="estudianteId">@for (item of estudiantes; track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select>
+      </label>
+      <label>Motivo<textarea rows="4" [(ngModel)]="motivo" placeholder="Describe brevemente el motivo comunicado"></textarea></label>
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" (click)="mostrarFormulario = false">Cancelar</button>
+        <button class="button button-primary" type="button" (click)="guardarJustificacion()">Guardar solicitud</button>
+      </div>
+    </section>
+  </div>
+}

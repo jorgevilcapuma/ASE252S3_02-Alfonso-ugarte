@@ -1,0 +1,116 @@
+<div class="page-intro">
+  <div>
+    <h1>Configuración del sistema</h1>
+    <p>Administra los parámetros generales, usuarios y estructura académica de la institución.</p>
+  </div>
+  <button class="button button-gold" type="button" (click)="guardar()" [disabled]="!hayCambios || guardando"><app-icono nombre="guardar" [tamano]="18" /> {{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+</div>
+
+<div class="settings">
+  <nav class="tabs" role="tablist" aria-label="Secciones de configuración">
+    @for (item of pestanas; track item.id) {
+      <button type="button" role="tab" class="tab" [class.is-active]="pestana === item.id" [attr.aria-selected]="pestana === item.id" (click)="pestana = item.id">
+        <app-icono [nombre]="item.icono" [tamano]="20" />
+        <span><strong>{{ item.titulo }}</strong><small>{{ item.detalle }}</small></span>
+      </button>
+    }
+  </nav>
+
+  <section class="panel content" role="tabpanel">
+    @switch (pestana) {
+      @case ('datos') {
+        <h2><app-icono nombre="info" [tamano]="20" /> Datos del colegio</h2>
+        <div class="form-grid">
+          <label class="field">Nombre de la institución
+            <input type="text" [(ngModel)]="formulario.nombre" [class.is-invalid]="errores.nombre">
+            @if (errores.nombre) { <small class="error">{{ errores.nombre }}</small> }
+          </label>
+          <label class="field">Código modular
+            <input type="text" inputmode="numeric" maxlength="7" [(ngModel)]="formulario.codigo" [class.is-invalid]="errores.codigo">
+            @if (errores.codigo) { <small class="error">{{ errores.codigo }}</small> }
+          </label>
+          <label class="field wide">Dirección
+            <input type="text" [(ngModel)]="formulario.direccion" [class.is-invalid]="errores.direccion">
+            @if (errores.direccion) { <small class="error">{{ errores.direccion }}</small> }
+          </label>
+          <label class="field wide">Niveles educativos
+            <input type="text" [value]="data.niveles.join(' · ')" readonly>
+            <small class="field-hint">Se configuran en la estructura académica.</small>
+          </label>
+        </div>
+      }
+      @case ('usuarios') {
+        <h2><app-icono nombre="usuarios" [tamano]="20" /> Gestión de usuarios</h2>
+        <div class="stats">
+          <div><strong>{{ usuarios.usuarios().length }}</strong><span>Cuentas</span></div>
+          <div><strong>{{ totalActivos }}</strong><span>Activas</span></div>
+          <div><strong>{{ contarPerfil('administrador') }}</strong><span>Administradores</span></div>
+          <div><strong>{{ contarPerfil('docente') }}</strong><span>Docentes</span></div>
+          <div><strong>{{ contarPerfil('alumno') }}</strong><span>Alumnos</span></div>
+        </div>
+        <p class="lead">Las cuentas desactivadas no pueden iniciar sesión, y cada correo solo ingresa con su perfil asignado.</p>
+        <a class="button button-primary" routerLink="../usuarios"><app-icono nombre="usuarios" [tamano]="18" /> Abrir gestión de usuarios</a>
+      }
+      @case ('estructura') {
+        <h2><app-icono nombre="estructura" [tamano]="20" /> Estructura académica</h2>
+        <div class="structure-grid">
+          @for (nivel of data.niveles; track nivel) {
+            <article class="structure-item">
+              <div class="structure-letter">{{ nivel[0] }}</div>
+              <div><strong>Nivel {{ nivel }}</strong><span>{{ data.gradosPorNivel[nivel].join(' · ') }}</span></div>
+              <b>{{ data.gradosPorNivel[nivel].length }} grados</b>
+            </article>
+          }
+        </div>
+        <div class="structure-footer">
+          Secciones activas: <strong>{{ data.secciones.join(', ') }}</strong> · {{ data.secciones.length }} por grado ·
+          @for (seccion of data.secciones; track seccion) { <span class="turn">{{ seccion }}: {{ data.turnoSeccion(seccion) }}</span> }
+        </div>
+        <a class="text-action" routerLink="../matriculas">Gestionar matrículas y traslados →</a>
+      }
+      @case ('identidad') {
+        <h2><app-icono nombre="paleta" [tamano]="20" /> Identidad visual</h2>
+        <div class="identity">
+          <div class="logo-box">
+            <span class="label">Logotipo / insignia</span>
+            <label class="logo-drop" title="Cambiar logotipo">
+              <img [src]="logoVista" alt="Logotipo actual">
+              <span class="logo-overlay"><app-icono nombre="subir" [tamano]="22" /> Cambiar</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" (change)="elegirLogo($event)" class="sr-only">
+            </label>
+            <small class="field-hint">PNG o JPG (máx. 2 MB)</small>
+            @if (formulario.logo) { <button type="button" class="row-action" (click)="quitarLogo()">Usar escudo original</button> }
+            @if (errores.logo) { <small class="error">{{ errores.logo }}</small> }
+          </div>
+          <div class="colors">
+            <label class="field">Color principal (hex)
+              <span class="color-input">
+                <input type="color" [(ngModel)]="formulario.colorPrincipal" (ngModelChange)="previsualizarColores()" aria-label="Elegir color principal">
+                <input type="text" maxlength="7" [(ngModel)]="formulario.colorPrincipal" (ngModelChange)="previsualizarColores()">
+              </span>
+            </label>
+            <label class="field">Color secundario (hex)
+              <span class="color-input">
+                <input type="color" [(ngModel)]="formulario.colorSecundario" (ngModelChange)="previsualizarColores()" aria-label="Elegir color secundario">
+                <input type="text" maxlength="7" [(ngModel)]="formulario.colorSecundario" (ngModelChange)="previsualizarColores()">
+              </span>
+            </label>
+            @if (errores.colores) { <small class="error">{{ errores.colores }}</small> }
+            <div class="preview" aria-label="Vista previa">
+              <span class="preview-bar"></span>
+              <button type="button" class="button button-primary button-sm" tabindex="-1">Botón principal</button>
+              <button type="button" class="button button-gold button-sm" tabindex="-1">Botón secundario</button>
+            </div>
+            <p class="field-hint">Los colores se previsualizan en todo el portal; se conservan solo al guardar.</p>
+            <button type="button" class="button button-quiet button-sm" (click)="restablecerIdentidad()">Restablecer colores institucionales</button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+</div>
+
+<div class="notice-box">
+  <div class="notice-icon"><app-icono nombre="info" [tamano]="20" /></div>
+  <div><strong>Datos institucionales</strong><p>Los cambios se guardan en la base de datos del colegio y se aplican en todos los equipos al ingresar al portal.</p></div>
+</div>

@@ -1,0 +1,58 @@
+<nav class="crumbs" aria-label="Ruta">
+  <a class="crumbs-back" routerLink="../dashboard" aria-label="Volver al dashboard"><app-icono nombre="atras" [tamano]="20" /></a>
+  <a routerLink="../dashboard">Control de asistencia</a>
+  <app-icono nombre="derecha" [tamano]="14" />
+  <strong>{{ etiquetaAula }}</strong>
+</nav>
+
+<div class="page-intro">
+  <div>
+    <h1>Seleccionar sección</h1>
+    <p>Elige la sección de {{ etiquetaAula }} para registrar o consultar la asistencia del día.</p>
+  </div>
+</div>
+
+<section class="panel picker" aria-label="Nivel y grado">
+  <div class="chip-filter" role="group" aria-label="Nivel educativo">
+    @for (opcion of data.niveles; track opcion) {
+      <button type="button" [class.is-active]="nivel === opcion" (click)="elegir(opcion)">{{ opcion }}</button>
+    }
+  </div>
+  <div class="grades" role="group" aria-label="Grado">
+    @for (opcion of grados; track opcion) {
+      <button type="button" class="grade" [class.is-active]="grado === opcion" [attr.aria-pressed]="grado === opcion" (click)="elegir(nivel, opcion)">
+        {{ nivel === 'Inicial' ? opcion : opcion + '°' }}
+      </button>
+    }
+  </div>
+</section>
+
+<div class="section-grid">
+  @for (tarjeta of tarjetas; track tarjeta.seccion) {
+    <article class="section-card">
+      <div class="card-top">
+        <span class="letter">{{ tarjeta.seccion }}</span>
+        <span class="turn" [class.is-tarde]="tarjeta.turno === 'Tarde'"><i></i> Turno {{ tarjeta.turno }}</span>
+      </div>
+      <h2>Sección "{{ tarjeta.seccion }}"</h2>
+      <p class="count"><app-icono nombre="usuarios" [tamano]="17" /> {{ tarjeta.estudiantes }} estudiantes</p>
+      <div class="today">
+        <div class="progress is-green"><span [style.width.%]="porcentaje(tarjeta)"></span></div>
+        <small>{{ porcentaje(tarjeta) }}% registrado hoy @if (tarjeta.faltas) { · <b>{{ tarjeta.faltas }} {{ tarjeta.faltas === 1 ? 'falta' : 'faltas' }}</b> }</small>
+      </div>
+      <div class="card-actions">
+        <a class="row-action" routerLink="../asistencia" [queryParams]="{ nivel, grado, seccion: tarjeta.seccion }">Registrar asistencia <app-icono nombre="derecha" [tamano]="16" /></a>
+        <a class="row-action secondary" routerLink="../asistencia" [queryParams]="{ nivel, grado, seccion: tarjeta.seccion, vista: 'mensual' }">Ver mes</a>
+      </div>
+    </article>
+  }
+</div>
+
+<div class="notice-box">
+  <div class="notice-icon"><app-icono nombre="info" [tamano]="20" /></div>
+  <div>
+    <strong>¿Falta alguna sección?</strong>
+    <p>Contacta al administrador del sistema para actualizar la estructura académica.</p>
+  </div>
+  <button class="button button-outline" type="button" (click)="solicitarActualizacion()">Solicitar actualización</button>
+</div>

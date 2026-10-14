@@ -1,0 +1,139 @@
+<div class="page-intro">
+  <div>
+    <h1>Reportes de alertas tempranas</h1>
+    <p>{{ data.nombreInstitucion }} · Auditoría de ausentismo de los últimos {{ ventana }} días lectivos.</p>
+  </div>
+  <div class="page-actions no-print">
+    <button class="button button-outline" type="button" (click)="imprimir()"><app-icono nombre="documento" [tamano]="18" /> Exportar PDF</button>
+    <button class="button button-outline" type="button" (click)="exportar()"><app-icono nombre="descargar" [tamano]="18" /> CSV</button>
+    <button class="button button-olive" type="button" (click)="confirmarMasiva = true"><app-icono nombre="megafono" [tamano]="18" /> Notificación masiva</button>
+  </div>
+</div>
+
+<div class="top-grid">
+  <section class="panel chart-panel">
+    <div class="panel-heading">
+      <div><h3>Tendencia de ausentismo (últimos 7 días)</h3><p>Faltas sin justificar por día. Pulsa una barra para filtrar la tabla.</p></div>
+      <app-icono class="muted" nombre="reporte" [tamano]="22" />
+    </div>
+    @let t = tendencia;
+    <div class="chart" role="group"[attr.aria-label]="t.descripcion">
+      <div class="grid-lines" aria-hidden="true">
+        @for (guia of t.guias; track guia) { <span><small>{{ guia }}</small></span> }
+      </div>
+      <div class="bars">
+        @for (barra of t.barras; track barra.fecha) {
+          <button type="button" class="bar-slot" [class.is-selected]="dia === barra.fecha" [class.is-dimmed]="dia && dia !== barra.fecha" (click)="elegirDia(barra.fecha)"
+                  [attr.aria-label]="(barra.fecha | date:'EEEE d MMM':'':'es-PE') + ': ' + barra.faltas + ' faltas'" [attr.aria-pressed]="dia === barra.fecha">
+            <span class="tip">{{ barra.faltas }} {{ barra.faltas === 1 ? 'falta' : 'faltas' }}<small>{{ barra.fecha | date:'EEE d MMM':'':'es-PE' }}</small></span>
+            @if (barra.esMaximo) { <b class="bar-value">{{ barra.faltas }}</b> }
+            <i class="bar" [class.is-max]="barra.esMaximo" [style.height.%]="barra.alto"></i>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="axis" aria-hidden="true">
+      @for (barra of t.barras; track barra.fecha) {
+        <span [class.is-strong]="barra.esMaximo || barra.esHoy">{{ barra.esHoy ? 'Hoy' : (barra.fecha | date:'EEE d':'':'es-PE') }}</span>
+      }
+    </div>
+  </section>
+
+  <section class="panel summary-panel">
+    <div class="panel-heading"><div><h3>Resumen de alertas</h3><p>Ventana de {{ ventana }} días lectivos</p></div></div>
+    <div class="panel-body summary-list">
+      <button type="button" class="summary-item is-critical" [class.is-active]="filtro === 'critica'" (click)="filtrar('critica')">
+        <span class="summary-icon"><app-icono nombre="alerta" [tamano]="20" /></span>
+        <span><strong>Críticas ({{ umbralCritico }}+ faltas)</strong><small>Requiere acción inmediata</small></span>
+        <b>{{ criticas }}</b>
+      </button>
+      <button type="button" class="summary-item is-preventive" [class.is-active]="filtro === 'preventiva'" (click)="filtrar('preventiva')">
+        <span class="summary-icon"><app-icono nombre="reloj" [tamano]="20" /></span>
+        <span><strong>Preventivas ({{ umbralPreventivo }} faltas)</strong><small>Monitoreo activo</small></span>
+        <b>{{ preventivas }}</b>
+      </button>
+      <button type="button" class="summary-item is-today" [class.is-active]="filtro === 'hoy'" (click)="filtrar('hoy')">
+        <span class="summary-icon"><app-icono nombre="calendario" [tamano]="20" /></span>
+        <span><strong>Faltas de hoy</strong><small>Sin justificación registrada</small></span>
+        <b>{{ faltasHoy }}</b>
+      </button>
+    </div>
+  </section>
+</div>
+
+<section class="panel table-panel">
+  <div class="table-toolbar">
+    <div>
+      <h3>Registro de alertas</h3>
+      <p>{{ filtradas.length }} de {{ alertas.length }} estudiantes
+        @if (dia) { · faltaron el {{ dia | date:"d 'de' MMMM":'':'es-PE' }} <button type="button" class="row-action" (click)="dia = null">Quitar filtro</button> }
+      </p>
+    </div>
+    <div class="toolbar-controls">
+      <div class="chip-filter" role="group" aria-label="Tipo de alerta">
+        <button type="button" [class.is-active]="filtro === 'todas'" (click)="filtrar('todas')">Todas</button>
+        <button type="button" [class.is-active]="filtro === 'critica'" (click)="filtrar('critica')">Críticas</button>
+        <button type="button" [class.is-active]="filtro === 'preventiva'" (click)="filtrar('preventiva')">Preventivas</button>
+        <button type="button" [class.is-active]="filtro === 'hoy'" (click)="filtrar('hoy')">Hoy</button>
+      </div>
+      <label class="search-box"><span class="sr-only">Buscar alumno</span><app-icono nombre="buscar" [tamano]="18" /><input type="search" [(ngModel)]="busqueda" (ngModelChange)="pagina = 1" placeholder="Buscar alumno…"></label>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Alumno</th><th>Grado / sección</th><th>Faltas acum.</th><th>Estado alerta</th><th>Último aviso</th><th class="num no-print">Acción</th></tr></thead>
+      <tbody>
+        @for (item of visibles; track item.estudiante.id) {
+          <tr>
+            <td><div class="student-cell"><div class="avatar student-avatar" [class.avatar-red]="item.nivel === 'critica'">{{ iniciales(item.estudiante.nombre) }}</div><div><strong>{{ item.estudiante.nombre }}</strong><small>DNI {{ item.estudiante.dni }}</small></div></div></td>
+            <td>{{ aula(item) }}</td>
+            <td><span class="summary-pill" [class.absent-pill]="item.nivel === 'critica'" [class.pending-pill]="item.nivel !== 'critica'">{{ item.faltas }} {{ item.faltas === 1 ? 'falta' : 'faltas' }}</span></td>
+            <td>
+              @switch (item.nivel) {
+                @case ('critica') { <span class="badge badge-danger">Crítica</span> }
+                @case ('preventiva') { <span class="badge badge-warning">Preventiva</span> }
+                @default { <span class="badge badge-info">Falta hoy</span> }
+              }
+              @if (item.faltaHoy && item.nivel !== 'hoy') { <small class="today-flag">· faltó hoy</small> }
+            </td>
+            <td class="muted">{{ item.ultimoAviso ? (item.ultimoAviso | date:'d MMM, HH:mm':'':'es-PE') : 'Sin aviso' }}</td>
+            <td class="num no-print">
+              <div class="row-buttons">
+                <a class="icon-button" routerLink="../asistencia" [queryParams]="{ nivel: item.estudiante.nivel, grado: item.estudiante.grado, seccion: item.estudiante.seccion, vista: 'mensual' }" title="Ver matriz del aula"><app-icono nombre="matriz" [tamano]="17" /></a>
+                <button type="button" class="icon-button send" title="Notificar a la familia" (click)="notificar(item)"><app-icono nombre="enviar" [tamano]="17" /></button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty-state">Sin alertas con estos filtros. Las faltas registradas en la matriz aparecerán aquí.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="table-foot no-print">
+    <span>Página {{ paginaActual }} de {{ totalPaginas }} · {{ filtradas.length }} alertas</span>
+    <div class="pager">
+      <button type="button" [disabled]="paginaActual <= 1" (click)="pagina = paginaActual - 1">← Anterior</button>
+      <button type="button" [disabled]="paginaActual >= totalPaginas" (click)="pagina = paginaActual + 1">Siguiente →</button>
+    </div>
+  </div>
+</section>
+
+<div class="notice-box">
+  <div class="notice-icon"><app-icono nombre="info" [tamano]="20" /></div>
+  <div><strong>Uso responsable</strong><p>Una alerta orienta el seguimiento educativo y no reemplaza la comunicación directa con la familia.</p></div>
+</div>
+
+@if (confirmarMasiva) {
+  <div class="modal-backdrop" (click)="confirmarMasiva = false">
+    <section class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="masiva-titulo" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><app-icono nombre="megafono" [tamano]="26" /></div>
+      <h2 id="masiva-titulo">¿Enviar notificación masiva?</h2>
+      <p class="modal-description">Se registrará un aviso de seguimiento para las {{ filtradas.length }} familias de la lista actual.</p>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="confirmarMasiva = false">Cancelar</button>
+        <button class="button button-primary" type="button" (click)="notificarMasivo()">Enviar avisos</button>
+      </div>
+    </section>
+  </div>
+}

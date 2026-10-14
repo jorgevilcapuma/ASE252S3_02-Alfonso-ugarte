@@ -1,0 +1,54 @@
+<div class="page-intro">
+  <div><span class="eyebrow">COMUNICACIÓN CON FAMILIAS</span><h1>Justificaciones</h1><p>Revisa los motivos de inasistencia enviados por las familias o registrados desde la matriz.</p></div>
+  <a class="button button-outline" routerLink="../asistencia"><app-icono nombre="mas" [tamano]="18" /> Registrar desde la matriz</a>
+</div>
+
+<div class="metric-grid cols-3 stack-gap">
+  <article class="metric-card"><div class="metric-top"><span>Solicitudes recibidas</span><span class="metric-icon icon-blue"><app-icono nombre="justificacion" [tamano]="18" /></span></div><strong>{{ data.justificaciones.length }}</strong><p>En el registro del portal</p></article>
+  <article class="metric-card"><div class="metric-top"><span>Pendientes de revisión</span><span class="metric-icon icon-gold"><app-icono nombre="reloj" [tamano]="18" /></span></div><strong>{{ pendientes }}</strong><p>Requieren decisión</p></article>
+  <article class="metric-card"><div class="metric-top"><span>Faltas de hoy</span><span class="metric-icon icon-red"><app-icono nombre="alerta" [tamano]="18" /></span></div><strong>{{ data.cantidadAlertas }}</strong><p>Sin justificación aprobada</p></article>
+</div>
+
+@if (mensaje) { <p class="login-error" role="alert">{{ mensaje }}</p> }
+
+<section class="panel table-panel">
+  <div class="table-toolbar">
+    <div><h3>Solicitudes</h3><p>Aprobar actualiza la asistencia; rechazar requiere indicar una observación.</p></div>
+    <div class="toolbar-controls">
+      <div class="chip-filter" role="group" aria-label="Filtrar por estado">
+        @for (opcion of filtros; track opcion.valor) {
+          <button type="button" [class.is-active]="filtro === opcion.valor" (click)="filtro = opcion.valor">{{ opcion.etiqueta }} ({{ contar(opcion.valor) }})</button>
+        }
+      </div>
+      <label class="search-box"><span class="sr-only">Buscar</span><app-icono nombre="buscar" [tamano]="18" /><input type="search" [(ngModel)]="busqueda" placeholder="Buscar alumno o motivo…"></label>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Estudiante</th><th>Fecha</th><th>Motivo</th><th>Estado</th><th>Revisión</th></tr></thead>
+      <tbody>
+        @for (item of filtradas; track item.id) {
+          <tr>
+            <td><div class="student-cell"><div class="avatar student-avatar">{{ iniciales(item.estudianteNombre) }}</div><div><strong>{{ item.estudianteNombre }}</strong><small>{{ aula(item) }}</small></div></div></td>
+            <td>{{ item.fecha | date:'d MMM y':'':'es-PE' }}</td>
+            <td class="reason-cell">{{ item.motivo }} @if (item.detalle) { <small class="evidence-file">{{ item.detalle }}</small> } @if (item.archivoNombre) { <small class="evidence-file">Sustento: {{ item.archivoNombre }}</small> }</td>
+            <td><span class="review-status" [class.review-pending]="item.estado === 'Pendiente'" [class.review-approved]="item.estado === 'Aprobada'" [class.review-observed]="item.estado === 'Observada'">{{ item.estado === 'Observada' ? 'Rechazada' : item.estado }}</span></td>
+            <td>
+              @if (item.estado === 'Pendiente') {
+                <div class="review-controls">
+                  <textarea rows="2" [(ngModel)]="observaciones[item.id]" placeholder="Observación (obligatoria al rechazar)"></textarea>
+                  <div class="inline-actions">
+                    <button class="approve-button" type="button" [disabled]="revisando === item.id" (click)="revisar(item, 'Aprobada')">Aprobar</button>
+                    <button class="decline-button" type="button" [disabled]="revisando === item.id" (click)="revisar(item, 'Observada')">Rechazar</button>
+                  </div>
+                </div>
+              } @else { <span class="muted">{{ item.observacion || 'Revisada' }}</span> }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty-state">{{ data.justificaciones.length ? 'No hay solicitudes con este filtro.' : 'Aún no hay justificaciones.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

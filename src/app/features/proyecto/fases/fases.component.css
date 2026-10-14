@@ -1,0 +1,19 @@
+:host { display: block; }
+.phase-count { padding: 8px 16px; border: 1px solid var(--color-line); border-radius: 999px; color: var(--color-text); background: #fff; font-size: 13px; font-weight: 600; }
+.phase-list { position: relative; display: grid; gap: 14px; }
+.phase-row { display: grid; grid-template-columns: 76px 44px minmax(0, 1fr); align-items: start; gap: 18px; padding: 22px 24px; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-sm); }
+.phase-week { display: grid; font-family: var(--font-display); font-size: 24px; font-weight: 800; line-height: 1; }
+.phase-week small { margin-top: 4px; color: var(--color-muted); font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: .1em; }
+.phase-marker { display: grid; width: 40px; height: 40px; place-items: center; border: 2px solid var(--color-line); border-radius: 50%; color: var(--color-muted); font-size: 13px; font-weight: 700; }
+.phase-done { border-color: var(--color-success); color: #fff; background: var(--color-success); }
+.phase-current { border-color: var(--color-gold); color: var(--color-warning); background: var(--color-gold-soft); }
+.phase-title-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.phase-title-line h2 { margin: 0; font-size: 19px; }
+.phase-status { padding: 4px 12px; border-radius: 999px; color: var(--color-muted); background: #efebe8; font-size: 12px; font-weight: 700; }
+.phase-status-done { color: var(--color-success); background: var(--color-success-soft); }
+.phase-status-current { color: var(--color-warning); background: var(--color-warning-soft); }
+.phase-detail > p { margin: 8px 0 14px; color: var(--color-text); font-size: 14.5px; }
+.phase-deliverable { display: inline-grid; gap: 2px; padding: 10px 14px; border-radius: var(--radius-md); background: var(--color-surface-2); }
+.phase-deliverable span { color: var(--color-muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; }
+.phase-deliverable strong { font-size: 14px; }
+@media (max-width: 640px) { .phase-row { grid-template-columns: 44px minmax(0, 1fr); } .phase-week { grid-column: 1 / -1; grid-template-columns: auto auto; justify-content: start; gap: 8px; align-items: baseline; } }

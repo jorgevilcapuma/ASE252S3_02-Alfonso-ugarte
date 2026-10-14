@@ -1,0 +1,5 @@
+:host { display: block; }
+.login-error { margin-bottom: 14px; }
+.toolbar-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-controls .search-box { width: 250px; }
+@media (max-width: 640px) { .toolbar-controls .search-box { width: 100%; } }

@@ -1,0 +1,104 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">CUENTA DEL ESTUDIANTE</span>
+    <h1>Mi perfil</h1>
+    <p>Revisa tus datos de identificación y contacto.</p>
+  </div>
+  <span class="student-record-count">Año escolar {{ alumno.hoy.slice(0, 4) }}</span>
+</div>
+
+@if (alumno.estudiante; as estudiante) {
+  <section class="panel student-profile-panel">
+    <div class="student-profile-main">
+      <div class="avatar avatar-red student-profile-avatar">
+        {{ obtenerIniciales(estudiante.nombre) }}
+      </div>
+      <div class="student-profile-name">
+        <span class="eyebrow">ESTUDIANTE</span>
+        <h2>{{ estudiante.nombre }}</h2>
+        <p>
+          {{ estudiante.nivel }} · {{ estudiante.grado }}{{ estudiante.nivel === 'Inicial' ? '' : '°' }} · Sección {{ estudiante.seccion }}
+        </p>
+      </div>
+    </div>
+
+    <div class="student-profile-details">
+      <div>
+        <span>CÓDIGO</span>
+        <strong>{{ codigo }}</strong>
+      </div>
+      <div>
+        <span>DNI</span>
+        <strong>•••• {{ estudiante.dni.slice(-4) }}</strong>
+      </div>
+      <div>
+        <span>TURNO</span>
+        <strong>{{ turno }}</strong>
+      </div>
+      <div>
+        <span>COLEGIO</span>
+        <strong>{{ alumno.nombreInstitucion }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel student-contact-panel">
+    <div class="student-panel-heading">
+      <div>
+        <span class="eyebrow">CONTACTO</span>
+        <h2>Datos de comunicación</h2>
+        <p>Se guardan en el registro del colegio.</p>
+      </div>
+    </div>
+
+    <div class="student-contact-form">
+      <label>
+        Correo de contacto
+        <input type="email" [(ngModel)]="contacto.correo" placeholder="familia@correo.com" />
+      </label>
+
+      <label>
+        Teléfono de contacto
+        <input type="tel" [(ngModel)]="contacto.telefono" placeholder="Número de contacto" />
+      </label>
+
+      <button class="button button-primary" type="button" [disabled]="guardando" (click)="guardarContacto()">
+        Guardar contacto
+      </button>
+    </div>
+
+    @if (mensaje) {
+      <p class="student-profile-feedback" role="status">{{ mensaje }}</p>
+    }
+  </section>
+
+  <section class="panel student-session-panel">
+    <div class="student-session-icon">▣</div>
+    <div class="student-session-info">
+      <span class="eyebrow">SESIÓN ACTIVA</span>
+      <h2>Acceso de alumno</h2>
+      <p>
+        Ingresaste con tu nombre y DNI. Para recuperación de datos o cambios del padrón, solicita apoyo al colegio.
+      </p>
+    </div>
+    <span class="student-session-state">Sesión activa</span>
+  </section>
+
+  <div class="notice-box student-demo-note">
+    <div class="notice-icon">i</div>
+    <div>
+      <strong>Protección de datos</strong>
+      <p>
+        El DNI se oculta parcialmente en pantalla. La sesión se cierra automáticamente al vencer su tiempo de validez.
+      </p>
+    </div>
+  </div>
+} @else {
+  <div class="notice-box">
+    <div class="notice-icon">i</div>
+    <div>
+      <strong>Perfil no disponible</strong>
+      <p>Vuelve a iniciar sesión como alumno.</p>
+    </div>
+  </div>
+}

@@ -1,0 +1,56 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">MI ASISTENCIA</span>
+    <h1>Alertas</h1>
+    <p>Avisos personales relacionados con tus registros y solicitudes.</p>
+  </div>
+  <span class="student-record-count">{{ alertas.length }} avisos</span>
+</div>
+
+<div class="student-alert-list">
+  @for (alerta of alertas; track alerta.id) {
+    <article
+      class="panel student-alert-card"
+      [class.student-alert-absence]="alerta.tipo === 'asistencia'"
+      [class.student-alert-justification]="alerta.tipo === 'justificacion'"
+    >
+      <div class="student-alert-icon">
+        {{ alerta.tipo === 'asistencia' ? '!' : '✓' }}
+      </div>
+
+      <div class="student-alert-content">
+        <div class="student-alert-meta">
+          <span>{{ formatearFecha(alerta.fecha) }}</span>
+          <span class="student-alert-kind">
+            {{ alerta.tipo === 'justificacion' ? 'JUSTIFICACIÓN' : 'ASISTENCIA' }}
+          </span>
+        </div>
+
+        <h2>{{ alerta.titulo }}</h2>
+        <p>{{ alerta.detalle }}</p>
+
+        @if (alerta.tipo === 'asistencia') {
+          <a class="text-action" routerLink="/alumno/asistencia">Consultar asistencia →</a>
+        } @else {
+          <a class="text-action" routerLink="/alumno/justificaciones">Ver solicitudes →</a>
+        }
+      </div>
+    </article>
+  } @empty {
+    <section class="panel student-empty">
+      <span class="empty-icon">✓</span>
+      <strong>No tienes alertas pendientes</strong>
+      <p>Los avisos de faltas, tardanzas y respuestas a solicitudes aparecerán aquí.</p>
+    </section>
+  }
+</div>
+
+<div class="notice-box student-demo-note">
+  <div class="notice-icon">i</div>
+  <div>
+    <strong>Avisos de asistencia</strong>
+    <p>
+      Se generan con tu asistencia registrada, las respuestas a tus justificaciones y los avisos enviados a tu familia.
+    </p>
+  </div>
+</div>

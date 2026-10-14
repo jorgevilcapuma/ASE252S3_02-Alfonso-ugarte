@@ -1,0 +1,97 @@
+<div class="estudiantes-container">
+  <div class="header-section">
+    <span class="sub-tag">SEGUIMIENTO ACADÉMICO</span>
+    <h1>Mis Estudiantes</h1>
+    <p>Consulta el padrón de alumnos matriculados filtrado por nivel, grado, sección y género.</p>
+  </div>
+
+  <!-- BARRAS DE FILTROS SEPARADOS -->
+  <div class="filtros-grid">
+    <div class="filter-group">
+      <label>Buscar</label>
+      <input 
+        type="text" 
+        placeholder="DNI o Apellidos..." 
+        [value]="busqueda()" 
+        (input)="actualizarBusqueda($event)" />
+    </div>
+
+    <div class="filter-group">
+      <label>Nivel Educativo</label>
+      <select [value]="nivelSeleccionado()" (change)="cambiarNivel($event)">
+        <option value="TODOS">Todos los Niveles</option>
+        <option value="Inicial">Inicial</option>
+        <option value="Primaria">Primaria</option>
+        <option value="Secundaria">Secundaria</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Grado y Sección</label>
+      <select [value]="seccionSeleccionada()" (change)="cambiarSeccion($event)">
+        <option value="TODOS">Todas las Secciones</option>
+        @for (sec of seccionesDisponibles(); track sec) {
+          <option [value]="sec">{{ sec }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Género</label>
+      <select [value]="generoSeleccionado()" (change)="cambiarGenero($event)">
+        <option value="TODOS">Todos (M / F)</option>
+        <option value="M">Masculino</option>
+        <option value="F">Femenino</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABLA DE ALUMNOS -->
+  <div class="table-card">
+    <table class="estudiantes-table">
+      <thead>
+        <tr>
+          <th>DNI</th>
+          <th>Estudiante</th>
+          <th>Género</th>
+          <th>Nivel / Grado</th>
+          <th>Curso Asignado</th>
+          <th>% Asistencia</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (alumno of alumnosFiltrados(); track alumno.id) {
+          <tr>
+            <td class="font-mono">{{ alumno.dni }}</td>
+            <td class="fw-bold">{{ alumno.apellidos }}, {{ alumno.nombres }}</td>
+            <td>
+              <span class="gender-tag" [class.masculino]="alumno.genero === 'M'" [class.femenino]="alumno.genero === 'F'">
+                {{ alumno.genero === 'M' ? 'M - Masculino' : alumno.genero === 'F' ? 'F - Femenino' : 'Sin indicar' }}
+              </span>
+            </td>
+            <td><span class="nivel-tag">{{ alumno.nivel }} - {{ alumno.gradoSeccion }}</span></td>
+            <td>{{ alumno.curso }}</td>
+            <td>
+              <div class="asistencia-progress">
+                <span class="pct">{{ alumno.asistencia }}%</span>
+                <div class="bar-bg">
+                  <div class="bar-fill" [style.width.%]="alumno.asistencia" [class.danger]="alumno.asistencia < 70" [class.warning]="alumno.asistencia >= 70 && alumno.asistencia < 85"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [attr.data-status]="alumno.estado">
+                {{ alumno.estado }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-msg">No se encontraron estudiantes con los filtros seleccionados.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

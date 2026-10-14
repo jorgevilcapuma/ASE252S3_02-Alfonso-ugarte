@@ -1,0 +1,385 @@
+:host {
+  display: block;
+}
+
+/* 1. Encabezado */
+.student-page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.student-page-heading h1 { margin: 6px 0 0; color: var(--color-primary-strong); font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+
+.student-page-heading p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 15px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.eyebrow.light {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.student-date-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #f1f3f8;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 2. Banner Principal */
+.student-welcome-band {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 32px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #700f2b 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  margin-bottom: 24px;
+}
+
+.student-welcome-band h2 {
+  margin: 6px 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.student-welcome-band p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  max-width: 580px;
+}
+
+.button-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.button-light:hover {
+  background: #f8f9fa;
+  transform: translateY(-2px);
+}
+
+/* 3. Métricas y Estadísticas */
+.student-home-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.student-home-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 4px 12px rgba(24, 32, 51, 0.04);
+}
+
+.student-home-stat > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.student-home-stat strong {
+  margin: 8px 0 4px;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-ink);
+  line-height: 1;
+}
+
+.student-home-stat strong small {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.student-home-stat small {
+  color: #8792a2;
+  font-size: 12px;
+}
+
+.student-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #f0f2f5;
+  margin: 8px 0 6px;
+  overflow: hidden;
+}
+
+.student-progress-track span {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+/* 4. Accesos directos */
+.student-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.student-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.student-shortcut:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 16px rgba(24, 32, 51, 0.06);
+}
+
+.shortcut-icon {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 18px;
+}
+
+.student-shortcut > span:not(.shortcut-icon) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.student-shortcut strong {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.student-shortcut small {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.student-shortcut b {
+  color: var(--color-primary);
+  font-size: 16px;
+}
+
+/* 5. Tabla de Actividad Reciente */
+.panel {
+  padding: 24px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 4px 14px rgba(24, 32, 51, 0.04);
+}
+
+.student-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.student-panel-heading h2 {
+  margin: 4px 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.student-panel-heading p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.quiet-button {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quiet-button:hover {
+  text-decoration: underline;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+  border-bottom: 2px solid #edf0f5;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 14px;
+  border-bottom: 1px solid #f0f2f5;
+  color: var(--color-text);
+}
+
+td strong {
+  color: var(--color-ink);
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 24px;
+}
+
+/* Estados de registro */
+.student-record-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.student-record-status.asistio,
+.student-record-status.presente {
+  background: #e6f8f0;
+  color: #0d8a54;
+}
+
+.student-record-status.tardanza {
+  background: #fff8e6;
+  color: #b27b00;
+}
+
+.student-record-status.falta,
+.student-record-status.ausente {
+  background: #fde8e8;
+  color: #c81e1e;
+}
+
+.student-record-status.justificada {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+/* 6. Caja Demo Nota */
+.notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid #e4e7ed;
+  border-radius: 14px;
+  background: var(--color-surface-2);
+}
+
+.notice-icon {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.notice-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.notice-box p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 7. Responsivo */
+@media (max-width: 1024px) {
+  .student-home-stats,
+  .student-shortcuts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .student-page-heading {
+    flex-direction: column;
+  }
+
+  .student-welcome-band {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-home-stats,
+  .student-shortcuts {
+    grid-template-columns: 1fr;
+  }
+}

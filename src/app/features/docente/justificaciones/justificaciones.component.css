@@ -1,0 +1,165 @@
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-section {
+  margin-bottom: 24px;
+}
+
+.header-section h1 { margin: 6px 0 0; color: var(--color-primary-strong); font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+
+.header-section p {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.justificaciones-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.justificacion-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .justificacion-card {
+    flex-direction: column;
+  }
+}
+
+.card-info {
+  flex: 1;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.info-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.curso-meta {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+}
+
+.detalles-box {
+  background: var(--color-surface-2);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+}
+
+.detalles-box p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.fecha-sub {
+  font-size: 12px !important;
+  color: #8792a2 !important;
+  margin-top: 8px !important;
+}
+
+.respuesta-box {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f0f4f8;
+  border-radius: 6px;
+}
+
+.respuesta-box small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.respuesta-box p {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  color: var(--color-ink);
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.badge-approved {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.badge-rejected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.btn-action {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.btn-action:hover {
+  opacity: 0.9;
+}
+
+.btn-approve {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.btn-reject {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.empty-card {
+  text-align: center;
+  color: #8792a2;
+  padding: 32px;
+}

@@ -1,0 +1,136 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">PORTAL PERSONAL · {{ alumno.etiquetaSeccion }}</span>
+    <h1>Hola, {{ primerNombre }}</h1>
+    <p>Este es tu resumen de asistencia y actividad escolar.</p>
+  </div>
+  <span class="student-date-chip">{{ formatearFechaLarga(alumno.hoy) }}</span>
+</div>
+
+<section class="student-welcome-band">
+  <div>
+    <span class="eyebrow light">TU ASISTENCIA, A UN VISTAZO</span>
+    <h2>Resumen del periodo</h2>
+    <p>Consulta tus registros. El docente o administrador es quien registra la asistencia oficial.</p>
+  </div>
+  <a class="button button-light" routerLink="/alumno/asistencia">Ver historial →</a>
+</section>
+
+<div class="student-home-stats">
+  <article class="student-home-stat">
+    <span>ASISTENCIA</span>
+    <strong><span [appContador]="resumen.porcentajeAsistencia"></span><small>%</small></strong>
+    <div class="student-progress-track">
+      <span [style.width.%]="resumen.porcentajeAsistencia"></span>
+    </div>
+    <small>En {{ resumen.total }} clases registradas</small>
+  </article>
+
+  <article class="student-home-stat">
+    <span>ASISTIÓ</span>
+    <strong [appContador]="resumen.asistencias"></strong>
+    <small>Clases con asistencia</small>
+  </article>
+
+  <article class="student-home-stat">
+    <span>TARDANZAS</span>
+    <strong [appContador]="resumen.tardanzas"></strong>
+    <small>Registros del periodo</small>
+  </article>
+
+  <article class="student-home-stat">
+    <span>FALTAS</span>
+    <strong [appContador]="resumen.faltas"></strong>
+    <small>{{ resumen.justificadas }} justificadas</small>
+  </article>
+</div>
+
+<div class="student-shortcuts">
+  <a class="student-shortcut" routerLink="/alumno/asistencia">
+    <span class="shortcut-icon">▤</span>
+    <span>
+      <strong>Mi asistencia</strong>
+      <small>Consultar fechas e historial</small>
+    </span>
+    <b>→</b>
+  </a>
+
+  <a class="student-shortcut" routerLink="/alumno/horario">
+    <span class="shortcut-icon">◷</span>
+    <span>
+      <strong>Mi horario</strong>
+      <small>Clases de la semana</small>
+    </span>
+    <b>→</b>
+  </a>
+
+  <a class="student-shortcut" routerLink="/alumno/cursos">
+    <span class="shortcut-icon">▣</span>
+    <span>
+      <strong>Mis cursos</strong>
+      <small>Sección y docentes</small>
+    </span>
+    <b>→</b>
+  </a>
+
+  <a class="student-shortcut" routerLink="/alumno/justificaciones">
+    <span class="shortcut-icon">▧</span>
+    <span>
+      <strong>Justificaciones</strong>
+      <small>Solicitudes y respuestas</small>
+    </span>
+    <b>→</b>
+  </a>
+</div>
+
+<section class="panel student-home-history">
+  <div class="student-panel-heading">
+    <div>
+      <span class="eyebrow">ÚLTIMOS REGISTROS</span>
+      <h2>Actividad reciente</h2>
+      <p>Los registros de hoy se actualizan cuando el personal toma asistencia.</p>
+    </div>
+    <a class="quiet-button" routerLink="/alumno/asistencia">Ver historial <span>→</span></a>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>FECHA</th>
+          <th>CURSO</th>
+          <th>DOCENTE</th>
+          <th>HORA</th>
+          <th>ESTADO</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (registro of recientes; track registro.fecha + registro.cursoId) {
+          <tr>
+            <td>{{ formatearFechaCorta(registro.fecha) }}</td>
+            <td><strong>{{ registro.cursoNombre }}</strong></td>
+            <td>{{ registro.docente }}</td>
+            <td>{{ registro.hora || '—' }}</td>
+            <td>
+              <span class="student-record-status" [ngClass]="registro.estado">
+                {{ alumno.etiquetaEstado(registro.estado) }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty-cell">No hay registros recientes disponibles.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="notice-box student-demo-note">
+  <div class="notice-icon">i</div>
+  <div>
+    <strong>Registro oficial</strong>
+    <p>Tu asistencia y tus cursos provienen del registro del colegio. Si encuentras un error, comunícalo a tu tutor.</p>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+:host { display: block; }
+.filters-panel { grid-template-columns: repeat(3, minmax(130px, 1fr)) minmax(150px, 1fr) minmax(200px, 1.4fr); }
+
+/* ---- KPI del mes ---- */
+.kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 20px; }
+.kpi { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px 22px; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.kpi > div:first-child { display: grid; gap: 6px; min-width: 0; }
+.kpi-label { color: var(--color-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.kpi strong { font-family: var(--font-display); font-size: 30px; font-weight: 800; line-height: 1; }
+.kpi-note { color: var(--color-muted); font-size: 12.5px; }
+.kpi .trend-up, .kpi .trend-down { display: inline-flex; align-items: center; gap: 4px; }
+.gauge { display: grid; width: 74px; height: 74px; flex: 0 0 74px; place-items: center; border-radius: 50%; color: var(--color-success); background: radial-gradient(closest-side, #fff 78%, transparent 80% 100%), conic-gradient(var(--color-success-solid) calc(var(--valor) * 1%), var(--color-success-soft) 0); font-size: 15px; font-weight: 800; }
+.split { display: grid; grid-template-columns: auto auto; align-items: center; gap: 2px 10px; text-align: center; }
+.split small { grid-row: 2; color: var(--color-muted); font-size: 11.5px; }
+.bubble { display: grid; min-width: 42px; height: 42px; place-items: center; padding: 0 8px; border-radius: 12px; font-size: 17px; font-weight: 800; }
+.bubble.is-red { color: var(--color-danger); background: var(--color-danger-soft); }
+.bubble.is-gold { color: var(--color-warning); background: var(--color-warning-soft); }
+.diamond { display: grid; width: 56px; height: 56px; flex: 0 0 56px; margin-right: 8px; place-items: center; border: 3px solid var(--color-warning-solid); border-radius: 10px; color: var(--color-warning-solid); font-size: 17px; font-weight: 800; transform: rotate(45deg); }
+.diamond > span { transform: rotate(-45deg); }
+
+/* ---- Matriz mensual ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--color-text); font-size: 12.5px; }
+.legend span { display: inline-flex; align-items: center; }
+.legend .legend-dot { margin-left: 0; }
+.month-table th, .month-table td { padding: 8px 6px; }
+.month-table th.sticky-n, .month-table td.sticky-n { width: 44px; padding-left: 16px; }
+.month-table .sticky-n, .month-table .sticky-name { position: sticky; z-index: 2; background: var(--color-surface); }
+.month-table thead .sticky-n, .month-table thead .sticky-name { background: var(--color-surface-2); }
+.month-table .sticky-n { left: 0; }
+.month-table .sticky-name { left: 44px; min-width: 240px; padding-right: 14px; box-shadow: 1px 0 0 var(--color-line); }
+.month-table tbody tr:hover .sticky-n, .month-table tbody tr:hover .sticky-name { background: color-mix(in srgb, var(--color-primary) 3%, #fff); }
+.month-table th.day { min-width: 40px; text-align: center; }
+.month-table th.day b { display: block; color: var(--color-ink); font-size: 12.5px; }
+.month-table th.day small { color: var(--color-muted); font-size: 10.5px; font-weight: 600; }
+.month-table .is-off { background: #eef2fa; }
+.month-table th.is-off b, .month-table th.is-off small { color: #8e98ad; }
+.month-table .is-today { background: var(--color-gold-soft); }
+.month-table td.day { text-align: center; }
+.cell { display: inline-grid; width: 28px; height: 28px; place-items: center; padding: 0; border: 0; border-radius: 6px; color: var(--color-muted); background: #eef0f4; font-size: 12px; font-weight: 800; transition: transform .12s ease, box-shadow .12s ease; }
+.cell:hover { transform: scale(1.12); box-shadow: 0 4px 10px rgba(20, 27, 45, .15); }
+.cell[data-estado='presente'] { color: #fff; background: var(--color-success-solid); }
+.cell[data-estado='falta'] { color: #fff; background: var(--color-danger-solid); }
+.cell[data-estado='tardanza'] { color: #fff; background: var(--color-warning-solid); }
+.cell[data-estado='justificado'] { color: #3b2a00; background: var(--color-justified-solid); }
+.total { color: var(--color-success); font-weight: 800; padding-right: 16px !important; }
+.total.is-low { color: var(--color-danger); }
+
+@media (max-width: 1100px) {
+  .filters-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 680px) {
+  .filters-panel, .kpi-row { grid-template-columns: 1fr; }
+  .month-table .sticky-name { min-width: 180px; }
+}

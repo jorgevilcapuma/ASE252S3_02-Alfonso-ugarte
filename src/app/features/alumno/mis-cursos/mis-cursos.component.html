@@ -1,0 +1,56 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">PORTAL DEL ESTUDIANTE</span>
+    <h1>Mis cursos</h1>
+    <p>Asignaturas y secciones en las que estás registrado.</p>
+  </div>
+  <span class="student-date-chip">{{ seccion }}</span>
+</div>
+
+<div class="student-course-grid">
+  @for (curso of cursos; track curso.id) {
+    <article class="panel student-course-card">
+      <div class="student-course-top">
+        <div class="student-course-mark">{{ curso.nombre[0] }}</div>
+        <span class="student-record-count">{{ curso.codigo }}</span>
+      </div>
+
+      <h2>{{ curso.nombre }}</h2>
+      <p class="student-course-section">{{ seccion }} · {{ curso.aula }}</p>
+
+      <div class="student-course-teacher">
+        <span class="eyebrow">DOCENTE</span>
+        <strong>{{ curso.docente }}</strong>
+      </div>
+
+      <div class="student-course-schedule">
+        @for (sesion of curso.horario; track sesion.dia + sesion.inicio) {
+          <span>{{ sesion.dia }} <b>{{ sesion.inicio }}–{{ sesion.fin }}</b></span>
+        }
+      </div>
+
+      <div class="course-attendance-rate">
+        <span>ASISTENCIA DEMO</span>
+        <strong>{{ porcentajeAsistencia(curso.id) }}%</strong>
+      </div>
+
+      <a
+        class="button button-outline student-course-action"
+        [routerLink]="'/alumno/asistencia'"
+        [queryParams]="{ curso: curso.id }"
+      >
+        Consultar asistencia <span>→</span>
+      </a>
+    </article>
+  }
+</div>
+
+<div class="notice-box student-demo-note">
+  <div class="notice-icon">i</div>
+  <div>
+    <strong>Cursos de tu sección</strong>
+    <p>
+      Cursos y docentes asignados a tu sección en la matrícula del año.
+    </p>
+  </div>
+</div>

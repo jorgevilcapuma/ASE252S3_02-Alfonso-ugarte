@@ -1,0 +1,119 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">AULAS Y COMUNICACIÓN</span>
+    <h1>Anuncios y Comunicados</h1>
+    <p>Publica avisos e información importante para tus alumnos y sus apoderados.</p>
+  </div>
+</div>
+
+@if (mensajeExito) {
+  <div class="alert-success">
+    ✓ Comunicado publicado correctamente.
+  </div>
+}
+
+<div class="comunicados-grid">
+  <!-- Formulario para Nuevo Comunicado -->
+  <section class="card form-card">
+    <h2>Nuevo Comunicado</h2>
+    
+    <div class="form-group">
+      <label for="titulo">Título del aviso *</label>
+      <input 
+        id="titulo" 
+        type="text" 
+        [(ngModel)]="titulo" 
+        placeholder="Ej: Recordatorio Examen Parcial" 
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="curso">Dirigido a</label>
+        <select id="curso" [(ngModel)]="cursoSeleccionado">
+          <option value="">Todos mis cursos</option>
+          @for (curso of docenteService.cursos(); track curso.id) {
+            <option [value]="curso.id">
+              {{ curso.nombre }} ({{ curso.grado }} {{ curso.seccion }})
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="prioridad">Prioridad</label>
+        <select id="prioridad" [(ngModel)]="prioridad">
+          <option value="Baja">Baja</option>
+          <option value="Media">Media</option>
+          <option value="Alta">Alta</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="contenido">Mensaje / Contenido *</label>
+      <textarea 
+        id="contenido" 
+        rows="4" 
+        [(ngModel)]="contenido" 
+        placeholder="Escribe el mensaje completo aquí..."
+      ></textarea>
+    </div>
+
+    <button 
+      type="button" 
+      class="btn-primary" 
+      [disabled]="!titulo.trim() || !contenido.trim()" 
+      (click)="publicarComunicado()"
+    >
+      Publicar Comunicado
+    </button>
+  </section>
+
+  <!-- Historial de Comunicados -->
+  <section class="card list-card">
+    <h2>Comunicados Publicados ({{ docenteService.comunicados().length }})</h2>
+
+    <div class="comunicados-list">
+      @for (item of docenteService.comunicados(); track item.id) {
+        <article class="comunicado-item">
+          <div class="comunicado-header">
+            <h3>{{ item.titulo }}</h3>
+            <span 
+              class="badge-priority" 
+              [class.alta]="item.prioridad === 'Alta'" 
+              [class.media]="item.prioridad === 'Media'" 
+              [class.baja]="item.prioridad === 'Baja'"
+            >
+              {{ item.prioridad }}
+            </span>
+          </div>
+
+          <div class="comunicado-meta">
+            <span><app-icono nombre="calendario" [tamano]="15" /> {{ item.fechaCreacion | date:"d MMM y":"":"es-PE" }}</span>
+            <span><app-icono nombre="cursos" [tamano]="15" /> {{ item.cursoNombre }}</span>
+          </div>
+
+          <p class="comunicado-body">{{ item.contenido }}</p>
+          <button type="button" class="eliminar" (click)="porEliminar = item"><app-icono nombre="papelera" [tamano]="15" /> Eliminar</button>
+        </article>
+      } @empty {
+        <p class="empty-state">No hay comunicados publicados aún.</p>
+      }
+    </div>
+  </section>
+</div>
+
+@if (porEliminar) {
+  <div class="modal-backdrop" (click)="porEliminar = null">
+    <section class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="eliminar-comunicado" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><app-icono nombre="papelera" [tamano]="24" /></div>
+      <h2 id="eliminar-comunicado">¿Eliminar el comunicado?</h2>
+      <p class="modal-description">"{{ porEliminar.titulo }}" dejará de mostrarse a los alumnos.</p>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="porEliminar = null">Cancelar</button>
+        <button class="button button-danger" type="button" (click)="eliminar()">Sí, eliminar</button>
+      </div>
+    </section>
+  </div>
+}

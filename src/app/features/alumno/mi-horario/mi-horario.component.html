@@ -1,0 +1,89 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">PORTAL DEL ESTUDIANTE</span>
+    <h1>Mi horario</h1>
+    <p>Días, horas, cursos y docentes de tu sección.</p>
+  </div>
+  <span class="student-date-chip">{{ seccion }}</span>
+</div>
+
+<section class="panel schedule-panel">
+  <div class="schedule-scroll">
+    <div class="schedule-grid">
+      <div class="schedule-corner">HORA</div>
+      @for (dia of dias; track dia) {
+        <div class="schedule-day-heading">{{ dia }}</div>
+      }
+
+      @for (bloque of bloques; track bloque.inicio) {
+        @let hora = bloque.inicio;
+        <div class="schedule-time" [class.recess-time]="bloque.recreo">
+          <strong>{{ hora }}</strong>
+          <small>{{ bloque.recreo ? 'hasta ' + bloque.fin : 'Bloque de clase' }}</small>
+        </div>
+
+        @if (bloque.recreo) {
+          <div class="schedule-recess">Recreo · {{ bloque.inicio }}–{{ bloque.fin }}</div>
+        } @else {
+          @for (dia of dias; track dia) {
+            @let curso = cursoEn(dia, hora);
+            @if (curso) {
+              <div class="schedule-cell schedule-course">
+                <strong>{{ curso.nombre }}</strong>
+                <span>{{ curso.docente }}</span>
+                <small>{{ curso.aula }} · {{ curso.codigo }}</small>
+                <i>{{ hora }}–{{ horaFin(dia, hora) }}</i>
+              </div>
+            } @else {
+              <div class="schedule-cell free-cell">Sin clase</div>
+            }
+          }
+        }
+      }
+    </div>
+  </div>
+
+  <div class="table-foot">
+    <span>Horario · {{ seccion }}</span>
+    <span>Confirma el horario oficial con tu institución.</span>
+  </div>
+</section>
+
+<section class="panel schedule-course-list">
+  <div class="student-panel-heading">
+    <div>
+      <span class="eyebrow">CURSOS DE LA SECCIÓN</span>
+      <h2>Docentes y horarios</h2>
+    </div>
+    <span class="student-record-count">{{ cursos.length }} cursos</span>
+  </div>
+
+  <div class="schedule-list">
+    @for (curso of cursos; track curso.id) {
+      <article class="schedule-list-row">
+        <div class="schedule-course-mark">{{ curso.nombre[0] }}</div>
+        <div class="schedule-list-name">
+          <strong>{{ curso.nombre }}</strong>
+          <small>{{ curso.codigo }} · {{ curso.seccion }}</small>
+        </div>
+        <div class="schedule-list-teacher">
+          <span>DOCENTE</span>
+          <strong>{{ curso.docente }}</strong>
+        </div>
+        <div class="schedule-list-hours">
+          @for (sesion of curso.horario; track sesion.dia + sesion.inicio) {
+            <span class="schedule-tag">{{ sesion.dia }} · {{ sesion.inicio }}–{{ sesion.fin }}</span>
+          }
+        </div>
+      </article>
+    }
+  </div>
+</section>
+
+<div class="notice-box student-demo-note">
+  <div class="notice-icon">i</div>
+  <div>
+    <strong>Horario de tu sección</strong>
+    <p>Cursos, docentes y horas registrados por el colegio para tu matrícula.</p>
+  </div>
+</div>

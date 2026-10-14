@@ -1,0 +1,154 @@
+<div class="page-intro">
+  <div>
+    <span class="eyebrow">AÑO ESCOLAR {{ data.hoy.slice(0, 4) }}</span>
+    <h1>Matrículas</h1>
+    <p>Registra nuevos estudiantes, trasládalos de sección y exporta el padrón por nivel, grado y sección.</p>
+  </div>
+  <div class="page-actions">
+    <button class="button button-outline" type="button" (click)="exportarCsv()"><app-icono nombre="descargar" [tamano]="18" /> Exportar CSV</button>
+    <button class="button button-primary" type="button" (click)="abrirMatricula()"><app-icono nombre="mas" [tamano]="18" /> Nueva matrícula</button>
+  </div>
+</div>
+
+<div class="metric-grid">
+  <article class="metric-card is-featured">
+    <div class="metric-top"><span>Estudiantes matriculados</span><span class="metric-icon"><app-icono nombre="matricula" [tamano]="18" /></span></div>
+    <strong [appContador]="total"></strong>
+    <p>Matrículas activas del año</p>
+  </article>
+  @for (item of totalPorNivel(); track item.nivel) {
+    <article class="metric-card level-card" [attr.data-nivel]="item.nivel" (click)="cambiarNivel(item.nivel)">
+      <div class="metric-top"><span>Nivel {{ item.nivel }}</span><span class="metric-icon icon-gold">{{ item.nivel[0] }}</span></div>
+      <strong [appContador]="item.total"></strong>
+      <p>{{ data.gradosPorNivel[item.nivel].length }} grados · {{ data.secciones.length }} secciones</p>
+      <div class="metric-track"><span [style.width.%]="total ? item.total / total * 100 : 0"></span></div>
+    </article>
+  }
+</div>
+
+<section class="panel filters-panel matriculas-filters">
+  <label class="filter-control">Buscar
+    <span class="search-box">
+      <app-icono nombre="buscar" [tamano]="18" />
+      <input type="search" placeholder="Nombre o DNI" [ngModel]="busqueda()" (ngModelChange)="filtrar('busqueda', $event)">
+    </span>
+  </label>
+  <label class="filter-control">Nivel
+    <select [ngModel]="nivel()" (ngModelChange)="cambiarNivel($event)">
+      <option value="">Todos</option>
+      @for (n of data.niveles; track n) { <option [value]="n">{{ n }}</option> }
+    </select>
+  </label>
+  <label class="filter-control">Grado
+    <select [ngModel]="grado()" (ngModelChange)="filtrar('grado', $event)" [disabled]="!nivel()">
+      <option value="">Todos</option>
+      @for (g of gradosDe(nivel()); track g) { <option [value]="g">{{ g }}</option> }
+    </select>
+  </label>
+  <label class="filter-control">Sección
+    <select [ngModel]="seccion()" (ngModelChange)="filtrar('seccion', $event)">
+      <option value="">Todas</option>
+      @for (s of data.secciones; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+  </label>
+</section>
+
+<section class="panel table-panel">
+  <div class="table-toolbar">
+    <div><h3>Padrón de estudiantes</h3><p>{{ filtrados().length }} resultados</p></div>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>ESTUDIANTE</th><th>DNI</th><th>NIVEL</th><th>GRADO</th><th>SECCIÓN</th><th>GÉNERO</th><th class="num">ACCIONES</th></tr></thead>
+      <tbody>
+        @for (estudiante of visibles(); track estudiante.id) {
+          <tr>
+            <td><div class="student-cell"><div class="avatar avatar-soft">{{ estudiante.nombre[0] }}</div><strong>{{ estudiante.nombre }}</strong></div></td>
+            <td class="muted">{{ estudiante.dni }}</td>
+            <td>{{ estudiante.nivel }}</td>
+            <td>{{ etiquetaGrado(estudiante) }}</td>
+            <td><span class="section-tag">{{ estudiante.seccion }}</span></td>
+            <td><span class="badge badge-neutral">{{ estudiante.genero === 'F' ? 'Femenino' : estudiante.genero === 'M' ? 'Masculino' : '—' }}</span></td>
+            <td class="num">
+              <div class="row-buttons">
+                <button type="button" class="icon-button" title="Trasladar de sección" [attr.aria-label]="'Trasladar a ' + estudiante.nombre" (click)="abrirTraslado(estudiante)"><app-icono nombre="traslado" [tamano]="17" /></button>
+                <button type="button" class="icon-button is-danger" title="Anular matrícula" [attr.aria-label]="'Anular matrícula de ' + estudiante.nombre" (click)="porRetirar = estudiante"><app-icono nombre="papelera" [tamano]="17" /></button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty-state">No se encontraron estudiantes con esos filtros.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="table-foot">
+    <span>Página {{ pagina() > totalPaginas() ? totalPaginas() : pagina() }} de {{ totalPaginas() }}</span>
+    <div class="pager">
+      <button type="button" [disabled]="pagina() <= 1" (click)="pagina.set(pagina() - 1)">← Anterior</button>
+      <button type="button" [disabled]="pagina() >= totalPaginas()" (click)="pagina.set(pagina() + 1)">Siguiente →</button>
+    </div>
+  </div>
+</section>
+
+@if (modalAbierto) {
+  <div class="modal-backdrop" (click)="modalAbierto = false">
+    <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">{{ trasladando ? 'TRASLADO' : 'NUEVA MATRÍCULA' }}</span><h2>{{ trasladando ? trasladando.nombre : 'Registrar estudiante' }}</h2></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="modalAbierto = false">×</button>
+      </div>
+      @if (!trasladando) {
+        <label>Nombres y apellidos<input type="text" name="nombre" [(ngModel)]="formulario.nombre" placeholder="Ej. María López Torres" required></label>
+        <div class="form-grid">
+          <label>DNI<input type="text" name="dni" [(ngModel)]="formulario.dni" inputmode="numeric" maxlength="8" placeholder="8 dígitos" required></label>
+          <label>Género
+            <select name="genero" [(ngModel)]="formulario.genero">
+              <option value="">Sin indicar</option>
+              <option value="F">Femenino</option>
+              <option value="M">Masculino</option>
+            </select>
+          </label>
+        </div>
+      } @else {
+        <p class="modal-description">Actual: {{ trasladando.nivel }} {{ etiquetaGrado(trasladando) }} "{{ trasladando.seccion }}". Su historial de asistencia se conserva.</p>
+      }
+      <div class="form-grid three">
+        <label>Nivel
+          <select name="nivel" [(ngModel)]="formulario.nivel" (ngModelChange)="alCambiarNivelFormulario()">
+            @for (n of data.niveles; track n) { <option [value]="n">{{ n }}</option> }
+          </select>
+        </label>
+        <label>Grado
+          <select name="grado" [(ngModel)]="formulario.grado">
+            @for (g of data.gradosPorNivel[formulario.nivel]; track g) { <option [value]="g">{{ g }}</option> }
+          </select>
+        </label>
+        <label>Sección
+          <select name="seccion" [(ngModel)]="formulario.seccion">
+            @for (s of data.secciones; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </label>
+      </div>
+      @if (error) { <p class="login-error" role="alert">{{ error }}</p> }
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="modalAbierto = false">Cancelar</button>
+        <button class="button button-primary" type="submit" [disabled]="guardando"><app-icono nombre="check" [tamano]="18" /> {{ guardando ? 'Guardando…' : trasladando ? 'Trasladar' : 'Matricular' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (porRetirar) {
+  <div class="modal-backdrop" (click)="porRetirar = null">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()" role="alertdialog" aria-modal="true">
+      <div class="confirm-icon">!</div>
+      <h2>¿Anular la matrícula?</h2>
+      <p class="modal-description">{{ porRetirar.nombre }} (DNI {{ porRetirar.dni }}) dejará de aparecer en el padrón y en el registro de asistencia. Si ya tiene asistencia registrada, la matrícula se marcará como retirada para conservar su historial.</p>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="porRetirar = null">Cancelar</button>
+        <button class="button button-danger" type="button" (click)="confirmarRetiro()">Sí, anular</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,88 @@
+<div class="perfil-container">
+  <div class="header-section">
+    <span class="sub-tag">CONFIGURACIÓN DE CUENTA</span>
+    <h1>Mi Perfil</h1>
+    <p>Consulta y actualiza la información del docente y credenciales institucionales.</p>
+  </div>
+
+  @if (guardadoExitoso()) {
+    <div class="alert-success">
+      ✓ Cambios guardados correctamente en el sistema.
+    </div>
+  }
+
+  <div class="perfil-grid">
+    <!-- TARJETA LATERAL - RESUMEN -->
+    <div class="card card-avatar">
+      <div class="avatar-circle">
+        <span>{{ iniciales }}</span>
+      </div>
+      <h2>{{ docente().nombres }}</h2>
+      <p class="role-badge">{{ docente().especialidad }}</p>
+
+      <div class="info-list">
+        <div class="info-item">
+          <span class="label">DNI</span>
+          <span class="value font-mono">{{ docente().dni }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Código de Plaza</span>
+          <span class="value font-mono">{{ docente().codigoPlaza }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Condición Laboral</span>
+          <span class="value status-badge">{{ docente().condicion }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO DE EDICIÓN -->
+    <div class="card card-form">
+      <h3>Información Personal y Contacto</h3>
+      <form (ngSubmit)="guardarCambios()" #formPerfil="ngForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombres</label>
+            <input type="text" [(ngModel)]="docente().nombres" name="nombres" required />
+          </div>
+          <div class="form-group">
+            <label>Apellidos</label>
+            <input type="text" [(ngModel)]="docente().apellidos" name="apellidos" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo Electrónico Institucional</label>
+            <input type="email" [value]="docente().email" name="email" readonly class="input-disabled" title="El correo se cambia desde Gestión de usuarios" />
+          </div>
+          <div class="form-group">
+            <label>Teléfono / Celular</label>
+            <input type="text" [(ngModel)]="docente().telefono" name="telefono" required />
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <h3>Información Académica e Institucional</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nivel Asignado</label>
+            <input type="text" [value]="docente().nivelEducativo" disabled class="input-disabled" />
+          </div>
+          <div class="form-group">
+            <label>Especialidad / Área</label>
+            <input type="text" [value]="docente().especialidad" disabled class="input-disabled" />
+          </div>
+        </div>
+
+        @if (error) { <p class="login-error" role="alert">{{ error }}</p> }
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

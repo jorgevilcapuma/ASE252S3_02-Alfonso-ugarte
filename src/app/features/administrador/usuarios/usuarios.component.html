@@ -1,0 +1,127 @@
+<div class="page-intro">
+  <div>
+    <span class="eyebrow">ADMINISTRACIÓN</span>
+    <h1>Gestión de usuarios</h1>
+    <p>Crea, edita, activa o desactiva las cuentas institucionales de administradores, docentes y alumnos.</p>
+  </div>
+  <button class="button button-primary" type="button" (click)="abrirNuevo()"><app-icono nombre="mas" [tamano]="18" /> Nuevo usuario</button>
+</div>
+
+<div class="metric-grid">
+  <article class="metric-card is-featured">
+    <div class="metric-top"><span>Cuentas registradas</span><span class="metric-icon"><app-icono nombre="usuarios" [tamano]="18" /></span></div>
+    <strong [appContador]="usuarios().length"></strong>
+    <p>En todos los perfiles</p>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Activas</span><span class="metric-icon icon-green"><app-icono nombre="check" [tamano]="18" /></span></div>
+    <strong [appContador]="totalActivos()"></strong>
+    <p>Pueden ingresar al portal</p>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Docentes</span><span class="metric-icon icon-gold"><app-icono nombre="cursos" [tamano]="18" /></span></div>
+    <strong [appContador]="totalDocentes()"></strong>
+    <p>Con acceso al registro</p>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Alumnos</span><span class="metric-icon icon-blue"><app-icono nombre="alumnos" [tamano]="18" /></span></div>
+    <strong [appContador]="totalAlumnos()"></strong>
+    <p>Con cuenta institucional</p>
+  </article>
+</div>
+
+<section class="panel table-panel users-panel">
+  <div class="table-toolbar">
+    <div><h3>Cuentas institucionales</h3><p>{{ filtrados().length }} de {{ usuarios().length }} usuarios</p></div>
+    <div class="users-filters">
+      <label class="search-box">
+        <span class="sr-only">Buscar usuario</span>
+        <app-icono nombre="buscar" [tamano]="18" />
+        <input type="search" placeholder="Buscar por nombre o correo" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+      </label>
+      <div class="chip-filter" role="group" aria-label="Filtrar por perfil">
+        <button type="button" [class.is-active]="filtroPerfil() === ''" (click)="filtroPerfil.set('')">Todos</button>
+        @for (perfil of perfiles; track perfil) {
+          <button type="button" [class.is-active]="filtroPerfil() === perfil" (click)="filtroPerfil.set(perfil)">{{ etiquetas[perfil] }}</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>USUARIO</th><th>PERFIL</th><th>ESTADO</th><th>CREADO</th><th class="num">ACCIONES</th></tr></thead>
+      <tbody>
+        @for (usuario of filtrados(); track usuario.id) {
+          <tr [class.is-inactive]="usuario.estado === 'Inactivo'">
+            <td>
+              <div class="student-cell">
+                <div class="avatar" [class.avatar-red]="usuario.perfil === 'administrador'" [class.avatar-gold]="usuario.perfil === 'docente'" [class.avatar-blue]="usuario.perfil === 'alumno'">{{ iniciales(usuario.nombre) }}</div>
+                <div><strong>{{ usuario.nombre }}</strong><small>{{ usuario.correo }}</small></div>
+              </div>
+            </td>
+            <td><span class="role-tag" [attr.data-perfil]="usuario.perfil">{{ etiquetas[usuario.perfil] }}</span></td>
+            <td>
+              <button type="button" class="switch" [class.is-on]="usuario.estado === 'Activo'" role="switch" [attr.aria-checked]="usuario.estado === 'Activo'" [attr.aria-label]="'Cambiar estado de ' + usuario.nombre" (click)="alternar(usuario)"><i></i></button>
+              <span class="switch-label">{{ usuario.estado }}</span>
+            </td>
+            <td class="muted">{{ usuario.creado }}</td>
+            <td class="num">
+              <div class="row-buttons">
+                <button type="button" class="icon-button" title="Editar" [attr.aria-label]="'Editar ' + usuario.nombre" (click)="editar(usuario)"><app-icono nombre="editar" [tamano]="17" /></button>
+                <button type="button" class="icon-button is-danger" title="Eliminar" [attr.aria-label]="'Eliminar ' + usuario.nombre" (click)="porEliminar = usuario"><app-icono nombre="papelera" [tamano]="17" /></button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty-state">No hay usuarios que coincidan con la búsqueda.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@if (modalAbierto) {
+  <div class="modal-backdrop" (click)="modalAbierto = false">
+    <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">{{ editandoId ? 'EDITAR CUENTA' : 'NUEVA CUENTA' }}</span><h2>{{ editandoId ? 'Actualizar usuario' : 'Registrar usuario' }}</h2></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="modalAbierto = false">×</button>
+      </div>
+      <label>Nombres y apellidos<input type="text" name="nombre" [(ngModel)]="formulario.nombre" placeholder="Ej. Ana Torres Ruiz" required></label>
+      <label>Correo institucional<input type="email" name="correo" [(ngModel)]="formulario.correo" placeholder="usuario@ie20191.edu.pe" required></label>
+      <div class="form-grid">
+        <label>Perfil
+          <select name="perfil" [(ngModel)]="formulario.perfil">
+            @for (perfil of perfiles; track perfil) { <option [value]="perfil">{{ etiquetas[perfil] }}</option> }
+          </select>
+        </label>
+        <label>Estado
+          <select name="estado" [(ngModel)]="formulario.estado">
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </label>
+      </div>
+      @if (error) { <p class="login-error" role="alert">{{ error }}</p> }
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="modalAbierto = false">Cancelar</button>
+        <button class="button button-primary" type="submit" [disabled]="guardando"><app-icono nombre="check" [tamano]="18" /> {{ guardando ? 'Guardando…' : 'Guardar' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (porEliminar) {
+  <div class="modal-backdrop" (click)="porEliminar = null">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()" role="alertdialog" aria-modal="true">
+      <div class="confirm-icon">!</div>
+      <h2>¿Eliminar a {{ porEliminar.nombre }}?</h2>
+      <p class="modal-description">La cuenta dejará de tener acceso al portal. Esta acción no se puede deshacer. Si la cuenta tiene registros (asistencias, revisiones o comunicados), desactívala en su lugar.</p>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="porEliminar = null">Cancelar</button>
+        <button class="button button-danger" type="button" (click)="confirmarEliminar()">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,144 @@
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-section {
+  margin-bottom: 24px;
+}
+
+.header-section h1 { margin: 6px 0 0; color: var(--color-primary-strong); font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+
+.header-section p {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+/* Panel de Filtros */
+.filter-card {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-ink);
+  outline: none;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  border-color: var(--color-primary);
+}
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  border: 1px solid #d8dee4;
+  color: var(--color-text);
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: var(--color-line);
+}
+
+/* Tabla */
+.table-card {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.data-table th {
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tag {
+  background: #f0f4f8;
+  color: #334155;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-weight: 700;
+}
+
+.stat-value.green {
+  color: #16a34a;
+}
+
+.stat-value.gold {
+  color: #d97706;
+}
+
+.stat-value.red {
+  color: #dc2626;
+}
+
+.empty-cell {
+  text-align: center;
+  color: #8792a2;
+  padding: 32px 16px !important;
+}

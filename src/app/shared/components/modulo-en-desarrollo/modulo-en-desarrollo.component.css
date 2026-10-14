@@ -1,0 +1,13 @@
+:host { display: block; }
+.phase-count { padding: 8px 16px; border-radius: 999px; color: var(--color-warning); background: var(--color-warning-soft); font-size: 13px; font-weight: 700; }
+.role-module-intro { display: flex; align-items: center; gap: 18px; padding: 24px 26px; }
+.role-module-icon { display: grid; width: 52px; height: 52px; flex: 0 0 52px; place-items: center; border-radius: 16px; color: var(--color-warning); background: var(--color-gold-soft); }
+.role-module-intro h2 { margin: 4px 0; font-size: 20px; }
+.role-module-intro p { margin: 0; color: var(--color-muted); font-size: 14px; }
+.role-feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.role-feature-card { display: flex; align-items: flex-start; gap: 16px; padding: 22px; }
+.role-feature-number { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; color: var(--color-primary-strong); background: var(--color-primary-soft); font-family: var(--font-display); font-weight: 800; }
+.role-feature-status { color: var(--color-gold-strong); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.role-feature-card h2 { margin: 4px 0 6px; font-size: 17px; }
+.role-feature-card p { margin: 0; color: var(--color-muted); font-size: 14px; }
+@media (max-width: 800px) { .role-feature-grid { grid-template-columns: 1fr; } }

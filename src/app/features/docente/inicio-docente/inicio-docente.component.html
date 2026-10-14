@@ -1,0 +1,64 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">DOCENTE</span>
+    <h1>Bienvenido, Prof. {{ docente.nombres }}</h1>
+    <p>Resumen general de tu jornada, asistencia y actividades pendientes.</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">CURSOS A CARGO</span>
+    <strong class="stat-value" [appContador]="cursos.length"></strong>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">TOTAL ALUMNOS</span>
+    <strong class="stat-value" [appContador]="docenteService.alumnos().length"></strong>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">JUSTIFICACIONES PENDIENTES</span>
+    <strong class="stat-value gold" [appContador]="justificacionesPendientes.length"></strong>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">ALUMNOS EN RIESGO</span>
+    <strong class="stat-value red" [appContador]="alumnosEnRiesgo.length"></strong>
+  </div>
+</div>
+
+<div class="grid-2col">
+  <!-- Cursos Asignados -->
+  <section class="card">
+    <h2>Mis Cursos Asignados</h2>
+    <div class="list">
+      @for (curso of cursos; track curso.id) {
+        <div class="list-item">
+          <div>
+            <strong>{{ curso.nombre }} ({{ curso.grado }} {{ curso.seccion }})</strong>
+            <small>{{ curso.horario }} &bull; {{ curso.aula }}</small>
+          </div>
+          <a [routerLink]="['/docente/registrar-asistencia']" [queryParams]="{ curso: curso.id }" class="btn-sm">
+            Tomar Asistencia
+          </a>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Justificaciones Pendientes -->
+  <section class="card">
+    <h2>Solicitudes Pendientes</h2>
+    <div class="list">
+      @for (item of justificacionesPendientes; track item.id) {
+        <div class="list-item">
+          <div>
+            <strong>{{ item.alumnoNombre }}</strong>
+            <small>{{ item.motivo }} &bull; {{ item.cursoNombre }}</small>
+          </div>
+          <span class="badge badge-warning">Pendiente</span>
+        </div>
+      } @empty {
+        <p class="empty-msg">No hay solicitudes pendientes por revisar.</p>
+      }
+    </div>
+  </section>
+</div>

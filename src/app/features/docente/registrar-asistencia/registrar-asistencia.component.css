@@ -1,0 +1,202 @@
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-section {
+  margin-bottom: 24px;
+}
+
+.header-section h1 { margin: 6px 0 0; color: var(--color-primary-strong); font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+
+.header-section p {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+/* Selector Top */
+.selector-card {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.selector-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.selector-group input,
+.selector-group select {
+  padding: 9px 12px;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-ink);
+  outline: none;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-bulk {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.btn-bulk {
+  border: 1px solid #d8dee4;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-bulk.green:hover { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+.btn-bulk.gold:hover { background: #fffbeb; color: #d97706; border-color: #fef3c7; }
+.btn-bulk.red:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+/* Tabla */
+.table-card {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.data-table th {
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+}
+
+code {
+  font-family: monospace;
+  background: #f0f4f8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #334155;
+}
+
+/* Radio buttons estilizados */
+.radio-options {
+  display: flex;
+  gap: 16px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.radio-label.green { color: #16a34a; }
+.radio-label.gold { color: #d97706; }
+.radio-label.red { color: #dc2626; }
+
+.obs-input {
+  width: 90%;
+  padding: 6px 10px;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+
+.obs-input:focus {
+  border-color: var(--color-primary);
+}
+
+.table-footer {
+  padding: 16px 20px;
+  background: var(--color-surface-2);
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-strong);
+}
+
+.empty-cell {
+  text-align: center;
+  color: #8792a2;
+  padding: 32px 16px !important;
+}
+.register-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; }
+.sum-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; animation: pop .4s cubic-bezier(.3,1.4,.5,1) both; }
+.sum-chip b { font-family: var(--font-display); font-size: 16px; }
+.sum-chip.green { color: var(--color-success); background: var(--color-success-soft); }
+.sum-chip.gold { color: var(--color-warning); background: var(--color-warning-soft); }
+.sum-chip.red { color: var(--color-danger); background: var(--color-danger-soft); }
+.sum-saved { margin-left: auto; color: var(--color-success); font-size: 13px; font-weight: 600; }

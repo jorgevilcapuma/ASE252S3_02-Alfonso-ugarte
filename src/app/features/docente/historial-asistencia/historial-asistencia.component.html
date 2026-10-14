@@ -1,0 +1,74 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">CONSULTAS</span>
+    <h1>Historial de Asistencia</h1>
+    <p>Revisa el registro histórico de asistencias por fecha y salón.</p>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card filter-card">
+  <div class="filter-group">
+    <label for="cursoFilter">Curso / Sección</label>
+    <select id="cursoFilter" [(ngModel)]="cursoFiltro">
+      <option value="">Todos los Cursos</option>
+      @for (c of docenteService.cursos(); track c.id) {
+        <option [value]="c.id">{{ c.nombre }} - {{ c.grado }} {{ c.seccion }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="fechaInicio">Desde</label>
+    <input id="fechaInicio" type="date" [(ngModel)]="fechaInicio" />
+  </div>
+
+  <div class="filter-group">
+    <label for="fechaFin">Hasta</label>
+    <input id="fechaFin" type="date" [(ngModel)]="fechaFin" />
+  </div>
+
+  <div class="filter-actions">
+    <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+  </div>
+</div>
+
+<!-- Tabla de Registros -->
+<div class="card table-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>FECHA</th>
+        <th>CURSO</th>
+        <th>GRADO / SECCIÓN</th>
+        <th>ASISTIERON</th>
+        <th>TARDANZAS</th>
+        <th>FALTAS</th>
+        <th>% ASISTENCIA</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of historialFiltrado; track item.id) {
+        <tr>
+          <td><strong>{{ item.fecha | date:"EEE d MMM y":"":"es-PE" }}</strong></td>
+          <td>{{ item.cursoNombre }}</td>
+          <td><span class="tag">{{ item.gradoSeccion }}</span></td>
+          <td><span class="stat-value green">{{ item.asistieron }}</span></td>
+          <td><span class="stat-value gold">{{ item.tardanzas }}</span></td>
+          <td><span class="stat-value red">{{ item.faltas }}</span></td>
+          <td>
+            <strong>{{ porcentaje(item) | number:"1.0-1":"es-PE" }}%</strong>
+          </td>
+          <td><a class="row-action" routerLink="../registrar-asistencia" [queryParams]="{ curso: item.cursoId, fecha: item.fecha }">Ver / editar</a></td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="8" class="empty-cell">
+            No se encontraron registros de asistencia para los filtros seleccionados.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

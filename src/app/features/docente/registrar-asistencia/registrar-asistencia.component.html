@@ -1,0 +1,105 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">REGISTRO DIARIO</span>
+    <h1>Registrar Asistencia</h1>
+    <p>Selecciona el curso y la fecha correspondiente para registrar la asistencia del aula.</p>
+  </div>
+</div>
+
+@if (guardado) {
+  <div class="alert-success">
+    ✓ Asistencia guardada correctamente para el día {{ fecha }}.
+  </div>
+}
+
+<!-- Controles de selección -->
+<div class="card selector-card">
+  <div class="selector-group">
+    <label for="cursoSelect">Curso / Aula</label>
+    <select id="cursoSelect" [(ngModel)]="cursoId" (ngModelChange)="cargarAlumnos()">
+      @for (c of docenteService.cursos(); track c.id) {
+        <option [value]="c.id">{{ c.nombre }} - {{ c.grado }} {{ c.seccion }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="selector-group">
+    <label for="fechaInput">Fecha de Clase</label>
+    <input id="fechaInput" type="date" [(ngModel)]="fecha" [max]="docenteService.hoy" (ngModelChange)="cargarAlumnos()" />
+  </div>
+
+  <div class="bulk-actions">
+    <span class="label-bulk">Marcar a todos:</span>
+    <button class="btn-bulk green" (click)="marcarTodos('asistio')">Asistió</button>
+    <button class="btn-bulk gold" (click)="marcarTodos('tardanza')">Tardanza</button>
+    <button class="btn-bulk red" (click)="marcarTodos('falta')">Falta</button>
+  </div>
+</div>
+
+@if (filas.length > 0) {
+  <div class="register-summary">
+    <span class="sum-chip green"><b>{{ contar('asistio') }}</b> Asistió</span>
+    <span class="sum-chip gold"><b>{{ contar('tardanza') }}</b> Tardanza</span>
+    <span class="sum-chip red"><b>{{ contar('falta') }}</b> Falta</span>
+    @if (yaRegistrado) { <span class="sum-saved">✓ Registro guardado para esta fecha</span> }
+  </div>
+}
+
+<!-- Lista de Registro -->
+<div class="card table-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>DNI</th>
+        <th>ESTUDIANTE</th>
+        <th>ESTADO</th>
+        <th>OBSERVACIÓN</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (fila of filas; track fila.alumnoId) {
+        <tr>
+          <td><code>{{ fila.dni }}</code></td>
+          <td><strong>{{ fila.apellidos }}, {{ fila.nombres }}</strong></td>
+          <td>
+            <div class="radio-options">
+              <label class="radio-label green">
+                <input type="radio" [name]="'e_' + fila.alumnoId" value="asistio" [(ngModel)]="fila.estado">
+                Asistió
+              </label>
+              <label class="radio-label gold">
+                <input type="radio" [name]="'e_' + fila.alumnoId" value="tardanza" [(ngModel)]="fila.estado">
+                Tardanza
+              </label>
+              <label class="radio-label red">
+                <input type="radio" [name]="'e_' + fila.alumnoId" value="falta" [(ngModel)]="fila.estado">
+                Falta
+              </label>
+              @if (fila.estado === 'justificado') { <span class="radio-label">Justificado</span> }
+            </div>
+          </td>
+          <td>
+            <input 
+              type="text" 
+              class="obs-input" 
+              placeholder="Opcional..." 
+              [(ngModel)]="fila.observacion" 
+            />
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4" class="empty-cell">
+            No hay alumnos registrados en el curso seleccionado.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @if (filas.length > 0) {
+    <div class="table-footer">
+      <button class="btn-primary" [disabled]="guardando || !filas.length" (click)="guardarAsistencia()">{{ guardando ? 'Guardando…' : yaRegistrado ? 'Actualizar asistencia' : 'Guardar asistencia' }}</button>
+    </div>
+  }
+</div>

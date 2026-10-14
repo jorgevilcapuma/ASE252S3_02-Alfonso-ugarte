@@ -1,0 +1,81 @@
+/* ==========================================================================
+   Tokens de diseño — Portal Ugartino (I.E. 20191 Alfonso Ugarte)
+   Identidad: granate institucional + dorado del escudo sobre lienzo claro.
+   --color-primary y --color-gold pueden cambiarse desde Configuración
+   (TemaService); los tonos suaves y oscuros se derivan con color-mix.
+   ========================================================================== */
+:root {
+  /* Marca (editables) */
+  --color-primary: #9b1b1f;
+  --color-gold: #fdc425;
+
+  /* Marca (derivados) */
+  --color-primary-strong: color-mix(in srgb, var(--color-primary) 72%, #1a0003);
+  --color-primary-hover: color-mix(in srgb, var(--color-primary) 88%, #000);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 9%, #fff);
+  --color-primary-line: color-mix(in srgb, var(--color-primary) 22%, #fff);
+  --color-gold-strong: color-mix(in srgb, var(--color-gold) 45%, #3d2c00);
+  --color-gold-soft: color-mix(in srgb, var(--color-gold) 18%, #fff);
+  --gradient-brand: linear-gradient(135deg, var(--color-primary-strong) 0%, var(--color-primary) 55%, color-mix(in srgb, var(--color-primary) 60%, var(--color-gold)) 100%);
+  --gradient-hero: linear-gradient(100deg, var(--color-primary-strong) 0%, var(--color-primary) 40%, var(--color-gold) 100%);
+
+  /* Neutros */
+  --color-ink: #141b2d;
+  --color-text: #3a4255;
+  --color-muted: #687083;
+  --color-line: #e3e6ee;
+  --color-line-soft: #eef0f5;
+  --color-canvas: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8f9fc;
+
+  /* Estados */
+  --color-success: #15803d;
+  --color-success-soft: #e6f6ec;
+  --color-success-solid: #22c55e;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fdf3d7;
+  --color-warning-solid: #f97316;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fdecec;
+  --color-danger-solid: #ef4444;
+  --color-info: #2f5ea8;
+  --color-info-soft: #e8f0fc;
+  --color-justified-solid: #eab308;
+
+  /* Forma */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-sm: 0 1px 2px rgba(20, 27, 45, .05), 0 1px 6px rgba(20, 27, 45, .04);
+  --shadow-md: 0 10px 30px rgba(20, 27, 45, .09);
+  --shadow-lg: 0 24px 60px rgba(20, 27, 45, .16);
+  --shadow-brand: 0 10px 26px color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+  /* Tipografía */
+  --font-body: 'DM Sans', system-ui, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', 'DM Sans', system-ui, sans-serif;
+  --fs-xs: 12px;
+  --fs-sm: 13.5px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: 21px;
+  --fs-2xl: 30px;
+
+  /* Layout */
+  --sidebar-width: 264px;
+  --topbar-height: 68px;
+  --page-max: 1360px;
+
+  /* Alias heredados (pantallas de alumno/docente aún usan estos nombres) */
+  --red: var(--color-primary);
+  --red-dark: var(--color-primary-strong);
+  --red-soft: var(--color-primary-soft);
+  --gold: var(--color-gold);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --surface: var(--color-surface);
+  --canvas: var(--color-canvas);
+}

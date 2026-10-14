@@ -1,0 +1,79 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">MI ASISTENCIA</span>
+    <h1>Comunicaciones</h1>
+    <p>
+      Avisos generales y recordatorios sobre el registro de asistencia.
+    </p>
+  </div>
+</div>
+
+<section class="student-communication-list">
+
+  @for (comunicado of comunicados; track comunicado.id) {
+
+    <article class="panel student-communication-card">
+
+      <div class="student-communication-date">
+        <strong>
+          {{ obtenerDia(comunicado.fecha) }}
+        </strong>
+
+        <span>
+          {{ obtenerMes(comunicado.fecha) }}
+        </span>
+      </div>
+
+      <div class="student-communication-copy">
+
+        <span class="eyebrow">
+          {{ comunicado.tipo === 'comunicado' ? 'COMUNICADO' : 'MI ASISTENCIA' }}
+        </span>
+
+        <h2>
+          {{ comunicado.titulo }}
+        </h2>
+
+        <p>
+          {{ comunicado.detalle }}
+        </p>
+
+      </div>
+
+    </article>
+
+  } @empty {
+
+    <article class="panel student-empty-state">
+
+      <div class="empty-icon">
+        i
+      </div>
+
+      <h2>No hay comunicaciones</h2>
+
+      <p>
+        Actualmente no tienes avisos o comunicaciones registrados.
+      </p>
+
+    </article>
+
+  }
+
+</section>
+
+<div class="notice-box student-demo-note">
+
+  <div class="notice-icon">
+    i
+  </div>
+
+  <div>
+    <strong>Comunicados del colegio</strong>
+
+    <p>
+      Publicados por tus docentes y por la institución. Los avisos de un curso solo los ven los alumnos de esa sección.
+    </p>
+  </div>
+
+</div>

@@ -1,0 +1,56 @@
+:host { display: block; }
+.top-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 20px; margin-bottom: 20px; }
+
+/* ---- Gráfico de barras (una serie) ---- */
+.chart-panel { padding-bottom: 18px; }
+.chart { position: relative; height: 230px; margin: 18px 24px 0 52px; }
+.grid-lines { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.grid-lines span { position: relative; border-top: 1px dashed var(--color-line); }
+.grid-lines span:last-child { border-top: 1px solid #c9cfda; }
+.grid-lines small { position: absolute; top: -9px; left: -40px; width: 32px; color: var(--color-muted); font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.bars { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.bar-slot { position: relative; display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0; border: 0; background: none; transition: opacity .2s ease; }
+.bar-slot:hover { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+.bar-slot.is-dimmed { opacity: .4; }
+.bar { display: block; width: min(56%, 46px); min-height: 2px; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--color-primary) 38%, #fff); transform-origin: bottom; animation: grow-up .7s cubic-bezier(.2, .7, .2, 1) both; transition: background .2s ease; }
+.bar.is-max, .bar-slot:hover .bar, .bar-slot.is-selected .bar { background: var(--color-primary); }
+.bar-value { margin-bottom: 4px; color: var(--color-ink); font-size: 13px; font-weight: 800; }
+.tip { position: absolute; z-index: 3; bottom: calc(100% - 8px); left: 50%; display: grid; gap: 1px; padding: 6px 10px; border-radius: 8px; color: #fff; background: var(--color-ink); box-shadow: var(--shadow-md); font-size: 12.5px; font-weight: 700; white-space: nowrap; opacity: 0; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease; pointer-events: none; }
+.tip small { color: rgba(255, 255, 255, .7); font-size: 11px; font-weight: 500; text-transform: capitalize; }
+.bar-slot:hover .tip, .bar-slot:focus-visible .tip { opacity: 1; transform: translate(-50%, 0); }
+.axis { display: grid; grid-template-columns: repeat(7, 1fr); margin: 8px 24px 0 52px; }
+.axis span { color: var(--color-muted); font-size: 12px; text-align: center; text-transform: capitalize; }
+.axis span.is-strong { color: var(--color-primary); font-weight: 700; }
+@keyframes grow-up { from { transform: scaleY(0); } }
+
+/* ---- Resumen ---- */
+.summary-list { display: grid; gap: 12px; }
+.summary-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--color-surface-2); text-align: left; transition: transform .15s ease, border-color .2s ease, box-shadow .2s ease; }
+.summary-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.summary-item.is-active { border-color: currentColor; }
+.summary-item > span:nth-child(2) { display: grid; flex: 1; gap: 2px; }
+.summary-item strong { color: var(--color-ink); font-size: 14px; }
+.summary-item small { color: var(--color-muted); font-size: 12.5px; }
+.summary-item b { font-family: var(--font-display); font-size: 30px; font-weight: 800; }
+.summary-icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 10px; background: #fff; }
+.summary-item.is-critical { color: var(--color-danger); background: var(--color-danger-soft); }
+.summary-item.is-preventive { color: var(--color-warning); background: var(--color-warning-soft); }
+.summary-item.is-today { color: var(--color-info); background: var(--color-info-soft); }
+
+/* ---- Tabla ---- */
+.toolbar-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-controls .search-box { width: 240px; }
+.today-flag { margin-left: 6px; color: var(--color-danger); font-size: 12px; font-weight: 600; }
+.icon-button.send { color: var(--color-primary); }
+
+@media (max-width: 1000px) { .top-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .chart { margin-right: 12px; }
+  .axis { margin-right: 12px; }
+  .axis span { font-size: 10.5px; }
+  .toolbar-controls .search-box { width: 100%; }
+}
+@media print {
+  .top-grid { grid-template-columns: 1fr 1fr; }
+  .tip { display: none; }
+}

@@ -1,0 +1,55 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">SOLICITUDES</span>
+    <h1>Justificaciones de Inasistencia</h1>
+    <p>Revisa y gestiona las solicitudes presentadas por los alumnos para tus clases.</p>
+  </div>
+</div>
+
+<div class="justificaciones-container">
+  @for (j of solicitudes; track j.id) {
+    <div class="card justificacion-card">
+      <div class="card-info">
+        <div class="info-header">
+          <h3>{{ j.alumnoNombre }}</h3>
+          <span 
+            class="badge" 
+            [class.badge-pending]="j.estado === 'Pendiente'"
+            [class.badge-approved]="j.estado === 'Aprobada'"
+            [class.badge-rejected]="j.estado === 'Observada'"
+          >
+            {{ j.estado }}
+          </span>
+        </div>
+
+        <p class="curso-meta">📚 <strong>{{ j.cursoNombre }}</strong> &bull; Clase del {{ j.fechaClase }}</p>
+        
+        <div class="detalles-box">
+          <p><strong>Motivo:</strong> {{ j.motivo }}</p>
+          @if (j.observacionAlumno) {
+            <p><strong>Detalle:</strong> {{ j.observacionAlumno }}</p>
+          }
+          <p class="fecha-sub">Solicitado el {{ j.fechaSolicitud }}</p>
+        </div>
+
+        @if (j.respuestaDocente) {
+          <div class="respuesta-box">
+            <small>Respuesta registrada:</small>
+            <p>{{ j.respuestaDocente }}</p>
+          </div>
+        }
+      </div>
+
+      @if (j.estado === 'Pendiente') {
+        <div class="card-actions">
+          <button class="btn-action btn-approve" (click)="aprobar(j.id)">Aprobar</button>
+          <button class="btn-action btn-reject" (click)="rechazar(j.id)">Rechazar</button>
+        </div>
+      }
+    </div>
+  } @empty {
+    <div class="card empty-card">
+      <p>No se encontraron solicitudes de justificación registradas.</p>
+    </div>
+  }
+</div>

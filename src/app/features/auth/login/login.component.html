@@ -1,0 +1,88 @@
+<main class="login">
+  <div class="backdrop" aria-hidden="true"><i></i><i></i></div>
+
+  <section class="card" aria-labelledby="login-title">
+    <div class="crest"><img [src]="tema.logo" alt="Escudo de la institución"></div>
+    <h1 id="login-title">Acceso Institucional<span>{{ nombreCorto }}</span></h1>
+    <p class="lead">Portal Ugartino Digital · Control de asistencia escolar</p>
+
+    <form class="form" #loginForm="ngForm" (ngSubmit)="ingresar()" novalidate>
+      <label class="field" for="access-role">Perfil de acceso
+        <span class="input-icon select-wrap">
+          <app-icono nombre="credencial" [tamano]="19" />
+          <select id="access-role" name="perfil" [(ngModel)]="perfil" (ngModelChange)="onPerfilChange()" required>
+            <option value="" disabled>Seleccione su rol…</option>
+            @for (opcion of perfiles; track opcion) { <option [value]="opcion">{{ etiquetas[opcion] }}</option> }
+          </select>
+        </span>
+      </label>
+
+      @if (perfil === 'alumno') {
+        <div class="fields-anim">
+          <label class="field" for="student-name">Nombre completo
+            <span class="input-icon">
+              <app-icono nombre="perfil" [tamano]="19" />
+              <input id="student-name" type="text" name="nombre" [(ngModel)]="nombre" placeholder="Nombres y apellidos" autocomplete="name" required>
+            </span>
+          </label>
+          <label class="field" for="student-dni">DNI
+            <span class="input-icon">
+              <app-icono nombre="credencial" [tamano]="19" />
+              <input id="student-dni" type="text" name="dni" [(ngModel)]="dni" (ngModelChange)="soloDigitos()" placeholder="8 dígitos" inputmode="numeric" autocomplete="off" maxlength="8" required>
+            </span>
+          </label>
+        </div>
+      } @else {
+        <div class="fields-anim">
+          <label class="field" for="login-email">Correo electrónico institucional
+            <span class="input-icon">
+              <app-icono nombre="correo" [tamano]="19" />
+              <input id="login-email" type="email" name="correo" [(ngModel)]="correo" placeholder="usuario@ie20191.edu.pe" autocomplete="username" [disabled]="!perfil">
+            </span>
+          </label>
+          <label class="field" for="login-password">Contraseña
+            <span class="input-icon password">
+              <app-icono nombre="candado" [tamano]="19" />
+              <input id="login-password" [type]="mostrarContrasena ? 'text' : 'password'" name="contrasena" [(ngModel)]="contrasena" placeholder="••••••••" autocomplete="current-password" [disabled]="!perfil">
+              <button type="button" class="eye" [attr.aria-label]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="mostrarContrasena = !mostrarContrasena" [disabled]="!perfil">
+                <app-icono [nombre]="mostrarContrasena ? 'ojo' : 'ojo-cerrado'" [tamano]="19" />
+              </button>
+            </span>
+          </label>
+        </div>
+      }
+
+      @if (mensaje) { <p class="login-error" role="alert">{{ mensaje }}</p> }
+
+      <button class="button button-primary submit" type="submit" [disabled]="autenticando()">
+        Iniciar sesión <app-icono nombre="entrar" [tamano]="18" />
+      </button>
+
+      <div class="modo-datos">
+        <span>Origen de los datos</span>
+        <div class="chip-filter" role="group" aria-label="Origen de los datos">
+          <button type="button" [class.is-active]="!modo.esLocal" [attr.aria-pressed]="!modo.esLocal" (click)="cambiarModo('servidor')">Servidor (API)</button>
+          <button type="button" [class.is-active]="modo.esLocal" [attr.aria-pressed]="modo.esLocal" (click)="cambiarModo('local')">Local (sin servidor)</button>
+        </div>
+        @if (modo.esLocal) {
+          <small>{{ modo.automatico() ? 'El servidor no respondió: se usan los datos guardados en este navegador.' : 'Se usan los datos guardados en este navegador.' }}
+            <button type="button" class="link" (click)="reiniciarLocal()">Reiniciar datos de demostración</button></small>
+        } @else {
+          <small>Se usan los datos del backend (SQL Server).</small>
+        }
+      </div>
+
+      @if (perfil) {
+        <p class="hint"><app-icono nombre="info" [tamano]="15" /> Se completó una cuenta de demostración del perfil {{ etiquetas[perfil] }}{{ perfil === 'alumno' ? '' : ' (contraseña 123456)' }}.</p>
+      }
+    </form>
+
+    <button type="button" class="link" (click)="olvideContrasena()">¿Olvidó su contraseña?</button>
+    <div class="divider"></div>
+    <button type="button" class="link muted-link" (click)="solicitarRegistro()">Solicitar registro institucional</button>
+  </section>
+
+  <p class="foot">Sistema Integrado de Gestión Académica<br>UGEL 08 Cañete · {{ anio }}</p>
+</main>
+
+@if (autenticando()) { <app-pantalla-carga variante="sesion" [usuario]="nombreIngreso" [perfil]="perfil ? etiquetas[perfil] : ''" /> }

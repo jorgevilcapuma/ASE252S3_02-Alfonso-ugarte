@@ -1,0 +1,131 @@
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow light">HOY · {{ data.hoy | date:"EEEE d 'de' MMMM":'':'es-PE' }}</span>
+    <h1>{{ data.nombreInstitucion }}</h1>
+    <p>Formando líderes con valores, excelencia académica y compromiso cívico en {{ data.direccionInstitucion.split(',')[0] }}. Construyendo el futuro, hoy.</p>
+    <div class="hero-actions">
+      <a class="button button-light" routerLink="../secciones"><app-icono nombre="asistencia" [tamano]="18" /> Registrar asistencia</a>
+      <a class="button hero-ghost" routerLink="../alertas">Ver alertas ({{ data.cantidadAlertas }})</a>
+    </div>
+  </div>
+  <div class="hero-badge" aria-hidden="true"><app-icono nombre="birrete" [tamano]="56" /></div>
+</section>
+
+<div class="metric-grid">
+  <article class="metric-card is-featured">
+    <div class="metric-top"><span>Asistencia registrada</span><span class="metric-icon"><app-icono nombre="check" [tamano]="18" /></span></div>
+    <strong><span [appContador]="data.porcentajeRegistro"></span><small>%</small></strong>
+    <p>Avance del registro de hoy</p>
+    <div class="metric-track"><span [style.width.%]="data.porcentajeRegistro"></span></div>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Estudiantes</span><span class="metric-icon icon-green"><app-icono nombre="alumnos" [tamano]="18" /></span></div>
+    <strong [appContador]="data.estudiantes.length"></strong>
+    <p>Inicial, primaria y secundaria</p>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Faltas de hoy</span><span class="metric-icon icon-red"><app-icono nombre="alerta" [tamano]="18" /></span></div>
+    <strong [appContador]="data.cantidadAlertas"></strong>
+    <p>Ausencias sin justificación</p>
+    <a class="text-action" routerLink="../alertas">Revisar alertas →</a>
+  </article>
+  <article class="metric-card">
+    <div class="metric-top"><span>Grados académicos</span><span class="metric-icon icon-gold"><app-icono nombre="escuela" [tamano]="18" /></span></div>
+    <strong [appContador]="totalGrados"></strong>
+    <p>{{ data.secciones.length }} secciones por grado</p>
+  </article>
+</div>
+
+<section class="news" aria-roledescription="carrusel" aria-label="Avisos y campañas" (mouseenter)="pausar(true)" (mouseleave)="pausar(false)" (focusin)="pausar(true)" (focusout)="pausar(false)">
+  <div class="section-heading">
+    <h2><app-icono nombre="megafono" [tamano]="22" /> Avisos y campañas UGEL 08</h2>
+    <div class="news-nav">
+      <button type="button" aria-label="Aviso anterior" (click)="anterior()"><app-icono nombre="izquierda" [tamano]="18" /></button>
+      <button type="button" aria-label="Aviso siguiente" (click)="siguiente()"><app-icono nombre="derecha" [tamano]="18" /></button>
+    </div>
+  </div>
+  <div class="slides">
+    @for (aviso of avisos; track aviso.titulo; let i = $index) {
+      <article class="slide" [attr.data-tono]="aviso.tono" [class.is-active]="i === actual()" [attr.aria-hidden]="i !== actual()" [attr.aria-label]="(i + 1) + ' de ' + avisos.length">
+        <img class="slide-photo" [src]="aviso.imagen" alt="" loading="lazy" referrerpolicy="no-referrer" (error)="$any($event.target).hidden = true">
+        <div class="slide-art" aria-hidden="true"><app-icono [nombre]="aviso.icono" [tamano]="120" /></div>
+        <div class="slide-copy">
+          <span class="slide-tag">{{ aviso.etiqueta }}</span>
+          <h3>{{ aviso.titulo }}</h3>
+          <p>{{ aviso.texto }}</p>
+        </div>
+      </article>
+    }
+  </div>
+  <div class="dots" role="tablist" aria-label="Elegir aviso">
+    @for (aviso of avisos; track aviso.titulo; let i = $index) {
+      <button type="button" role="tab" [class.is-active]="i === actual()" [attr.aria-selected]="i === actual()" [attr.aria-label]="'Aviso ' + (i + 1)" (click)="actual.set(i)"></button>
+    }
+  </div>
+</section>
+
+<div class="levels-grid">
+  @for (bloque of bloquesNivel; track bloque.nivel) {
+    <section class="level-block" [attr.data-nivel]="bloque.nivel">
+      <div class="level-head">
+        <h2><app-icono [nombre]="bloque.icono" [tamano]="22" /> Nivel {{ bloque.nivel }}</h2>
+        <span class="count-chip">{{ data.gradosPorNivel[bloque.nivel].length }} {{ bloque.unidad === 'Aula' ? 'aulas' : bloque.unidad === 'Año' ? 'años' : 'grados' }}</span>
+      </div>
+      <div class="grade-grid">
+        @for (grado of data.gradosPorNivel[bloque.nivel]; track grado) {
+          @let avance = registroGrado(bloque.nivel, grado);
+          <a class="grade-card" routerLink="../secciones" [queryParams]="{ nivel: bloque.nivel, grado }" [attr.aria-label]="bloque.nivel + ' ' + grado + ', ' + avance + '% registrado hoy'">
+            <strong>{{ etiquetaCorta(bloque.nivel, grado) }}</strong>
+            <span>{{ bloque.nivel === 'Inicial' ? 'Años' : bloque.unidad }}</span>
+            <small><i [style.width.%]="avance"></i></small>
+          </a>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<div class="grid-2 dash-grid">
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h3>Asistencia por nivel</h3><p>Avance del registro de hoy</p></div>
+      <a class="button button-subtle button-sm" routerLink="../asistencia">Ver matriz</a>
+    </div>
+    <div class="panel-body levels">
+      @for (nivel of data.niveles; track nivel) {
+        <div class="level-row">
+          <div class="level-mark" [attr.data-nivel]="nivel">{{ nivel[0] }}</div>
+          <div class="level-name"><strong>{{ nivel }}</strong><small>{{ data.gradosPorNivel[nivel].length }} grados</small></div>
+          <div class="level-progress">
+            <div class="progress is-gold"><span [style.width.%]="data.porcentajeRegistroNivel(nivel)"></span></div>
+            <small>{{ data.porcentajeRegistroNivel(nivel) }}% registrado</small>
+          </div>
+          <span class="level-count">{{ data.estudiantesPorNivel(nivel).length }}<small>alumnos</small></span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h3>Ruta del proyecto</h3><p>Avance de la solución tecnológica</p></div>
+    </div>
+    <div class="panel-body project">
+      @let f = faseActual;
+      <div class="project-number">{{ f.numero }}<span>/ {{ f.total }}</span></div>
+      <strong>{{ f.fase?.titulo ?? 'Fases del proyecto' }}</strong>
+      <small>{{ f.fase?.producto ?? '' }}</small>
+      <div class="progress is-gold"><span [style.width.%]="f.avance"></span></div>
+      <a class="text-action" routerLink="../fases">Consultar cronograma completo →</a>
+    </div>
+  </section>
+</div>
+
+<div class="attention" [class.is-calm]="!data.cantidadAlertas">
+  <span class="attention-icon"><app-icono [nombre]="data.cantidadAlertas ? 'alerta' : 'check'" [tamano]="22" /></span>
+  <div>
+    <strong>Seguimiento de asistencia</strong>
+    <p>{{ data.cantidadAlertas ? 'Hay ' + data.cantidadAlertas + ' ausencias hoy que requieren verificar la comunicación con las familias.' : 'No hay ausencias sin justificar para hoy.' }}</p>
+  </div>
+  <a class="button button-outline" routerLink="../alertas">Abrir alertas</a>
+</div>

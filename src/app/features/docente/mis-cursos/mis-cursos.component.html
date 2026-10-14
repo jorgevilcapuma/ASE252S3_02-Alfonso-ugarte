@@ -1,0 +1,84 @@
+<div class="cursos-container">
+  <!-- Encabezado de la página -->
+  <div class="cursos-header">
+    <span class="sub-tag">AULAS ASIGNADAS</span>
+    <h1>Mis Cursos</h1>
+    <p>Gestión y lista de salones a cargo para el periodo lectivo actual por nivel educativo.</p>
+  </div>
+
+  <!-- Barra de Filtros por Nivel -->
+  <div class="filtros-container">
+    <button 
+      type="button"
+      class="filter-btn"
+      [class.active]="nivelSeleccionado() === 'TODOS'"
+      (click)="cambiarNivel('TODOS')">
+      Todos los niveles ({{ todosLosCursos().length }})
+    </button>
+
+    <button 
+      type="button"
+      class="filter-btn"
+      [class.active]="nivelSeleccionado() === 'Inicial'"
+      (click)="cambiarNivel('Inicial')">
+      🎨 Inicial
+    </button>
+
+    <button 
+      type="button"
+      class="filter-btn"
+      [class.active]="nivelSeleccionado() === 'Primaria'"
+      (click)="cambiarNivel('Primaria')">
+      📘 Primaria
+    </button>
+
+    <button 
+      type="button"
+      class="filter-btn"
+      [class.active]="nivelSeleccionado() === 'Secundaria'"
+      (click)="cambiarNivel('Secundaria')">
+      📕 Secundaria
+    </button>
+  </div>
+
+  <!-- Tarjetas de Cursos -->
+  <div class="cursos-grid">
+    @for (curso of cursosFiltrados(); track curso.id) {
+      <div class="curso-card">
+        <div class="card-top">
+          <span class="codigo-badge">{{ curso.codigo }}</span>
+          <span class="nivel-badge" [attr.data-nivel]="curso.nivel">{{ curso.nivel }}</span>
+        </div>
+
+        <h3 class="curso-nombre">{{ curso.nombre }}</h3>
+        <p class="curso-grado">{{ curso.grado }} {{ curso.seccion }}</p>
+
+        <div class="curso-detalles">
+          <div class="detalle-row">
+            <span class="label">Total Estudiantes:</span>
+            <span class="value font-bold">{{ curso.totalAlumnos }} alumnos</span>
+          </div>
+          <div class="detalle-row">
+            <span class="label">Horario:</span>
+            <span class="value">{{ curso.horario }}</span>
+          </div>
+          <div class="detalle-row">
+            <span class="label">Aula Asignada:</span>
+            <span class="value">{{ curso.aula }}</span>
+          </div>
+        </div>
+
+        <button 
+          class="btn-tomar-asistencia"
+          [routerLink]="['/docente/registrar-asistencia']"
+          [queryParams]="{ curso: curso.id }">
+          Tomar Asistencia
+        </button>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <p>No hay cursos registrados en el nivel seleccionado.</p>
+      </div>
+    }
+  </div>
+</div>

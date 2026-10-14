@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Animaciones y microinteracciones globales
+   Todo respeta `prefers-reduced-motion` (ver base.css).
+   ========================================================================== */
+
+/* ---- Keyframes ---- */
+@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scale-in { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes slide-in-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(214, 75, 78, .55); } 80%, 100% { box-shadow: 0 0 0 9px rgba(214, 75, 78, 0); } }
+@keyframes bell-ring { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(14deg); } 20%, 40% { transform: rotate(-14deg); } 50% { transform: rotate(6deg); } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
+
+/* ---- Entrada de página: cada bloque principal aparece en cascada ---- */
+.page > :not(router-outlet) > * {
+  animation: fade-up .5s cubic-bezier(.2, .7, .2, 1) both;
+}
+.page > :not(router-outlet) > :nth-child(1) { animation-delay: .02s; }
+.page > :not(router-outlet) > :nth-child(2) { animation-delay: .08s; }
+.page > :not(router-outlet) > :nth-child(3) { animation-delay: .14s; }
+.page > :not(router-outlet) > :nth-child(4) { animation-delay: .2s; }
+.page > :not(router-outlet) > :nth-child(5) { animation-delay: .26s; }
+.page > :not(router-outlet) > :nth-child(n + 6) { animation-delay: .32s; }
+/* Los avisos flotantes y modales tienen su propia animación */
+.page > :not(router-outlet) > .toast,
+.page > :not(router-outlet) > .modal-backdrop { animation: none; }
+
+/* Tarjetas KPI y listas en cascada (incluye pantallas de docente y alumno) */
+.stats-grid > *, .student-stats-grid > *, .cursos-grid > *, .student-course-grid > *, .comunicados-grid > *,
+.student-request-list > *, .student-alert-list > *, .student-communication-list > *, .comunicados-list > *,
+.schedule-list > *, .phase-list > *, .list > *, .structure-grid > * { animation: fade-up .45s cubic-bezier(.2, .7, .2, 1) both; }
+:is(.stats-grid, .student-stats-grid, .cursos-grid, .student-course-grid, .comunicados-grid, .student-request-list, .student-alert-list, .student-communication-list, .comunicados-list, .schedule-list, .phase-list, .list, .structure-grid) > :nth-child(1) { animation-delay: .08s; }
+:is(.stats-grid, .student-stats-grid, .cursos-grid, .student-course-grid, .comunicados-grid, .student-request-list, .student-alert-list, .student-communication-list, .comunicados-list, .schedule-list, .phase-list, .list, .structure-grid) > :nth-child(2) { animation-delay: .14s; }
+:is(.stats-grid, .student-stats-grid, .cursos-grid, .student-course-grid, .comunicados-grid, .student-request-list, .student-alert-list, .student-communication-list, .comunicados-list, .schedule-list, .phase-list, .list, .structure-grid) > :nth-child(3) { animation-delay: .2s; }
+:is(.stats-grid, .student-stats-grid, .cursos-grid, .student-course-grid, .comunicados-grid, .student-request-list, .student-alert-list, .student-communication-list, .comunicados-list, .schedule-list, .phase-list, .list, .structure-grid) > :nth-child(4) { animation-delay: .26s; }
+:is(.stats-grid, .student-stats-grid, .cursos-grid, .student-course-grid, .comunicados-grid, .student-request-list, .student-alert-list, .student-communication-list, .comunicados-list, .schedule-list, .phase-list, .list, .structure-grid) > :nth-child(n + 5) { animation-delay: .32s; }
+
+.stat-card, .student-stat-card, .curso-card, .card { transition: transform .22s ease, box-shadow .22s ease; }
+.stat-card:hover, .student-stat-card:hover, .curso-card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(20, 27, 45, .1); }
+
+/* Celdas del horario */
+.schedule-grid > * { animation: fade-in .4s ease both; }
+.schedule-course { animation: scale-in .45s cubic-bezier(.2, .7, .2, 1) both; }
+
+.metric-grid > * { animation: scale-in .5s cubic-bezier(.2, .7, .2, 1) both; }
+.metric-grid > :nth-child(1) { animation-delay: .08s; }
+.metric-grid > :nth-child(2) { animation-delay: .16s; }
+.metric-grid > :nth-child(3) { animation-delay: .24s; }
+.metric-grid > :nth-child(4) { animation-delay: .32s; }
+.metric-grid > :nth-child(n + 5) { animation-delay: .4s; }
+
+/* Filas de tablas */
+tbody tr { animation: fade-in .4s ease both; }
+tbody tr:nth-child(1) { animation-delay: .05s; }
+tbody tr:nth-child(2) { animation-delay: .08s; }
+tbody tr:nth-child(3) { animation-delay: .11s; }
+tbody tr:nth-child(4) { animation-delay: .14s; }
+tbody tr:nth-child(5) { animation-delay: .17s; }
+tbody tr:nth-child(6) { animation-delay: .2s; }
+tbody tr:nth-child(7) { animation-delay: .23s; }
+tbody tr:nth-child(n + 8) { animation-delay: .26s; }
+tbody tr td { transition: background .18s ease; }
+
+/* ---- Barras de progreso que "crecen" ---- */
+.metric-track span,
+.progress > span {
+  transform-origin: left center;
+  animation: grow-x .9s cubic-bezier(.2, .7, .2, 1) .25s both;
+}
+
+/* ---- Hover en tarjetas y paneles ---- */
+.metric-card,
+.panel {
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(20, 27, 45, .1);
+}
+.metric-card.is-featured:hover { box-shadow: 0 20px 40px color-mix(in srgb, var(--color-primary-strong) 36%, transparent); }
+.metric-card .metric-icon { transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.metric-card:hover .metric-icon { transform: rotate(-8deg) scale(1.12); }
+
+/* ---- Botones: presión táctil y brillo ---- */
+.button { position: relative; overflow: hidden; }
+.button:active:not(:disabled) { transform: translateY(0) scale(.97); }
+.button-primary::after {
+  position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%);
+  background-size: 200% 100%; background-position: 200% 0;
+  content: ''; pointer-events: none; opacity: 0;
+}
+.button-primary:hover::after { opacity: 1; animation: shimmer 1s ease; }
+.approve-button, .decline-button, .row-action, .pager button { transition: transform .15s ease, filter .15s ease; }
+.approve-button:hover, .decline-button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.approve-button:active, .decline-button:active { transform: scale(.95); }
+
+/* ---- Insignias ---- */
+.badge, .summary-pill, .review-status { animation: pop .4s cubic-bezier(.3, 1.4, .5, 1) both; }
+
+/* ---- Selects de estado: transición suave de color ---- */
+.status-select { transition: background .25s ease, color .25s ease, transform .15s ease; }
+.status-select:active { transform: scale(.97); }
+
+/* ---- Modales y avisos ---- */
+.modal-backdrop { animation: fade-in .2s ease both; }
+.modal { animation: scale-in .28s cubic-bezier(.2, .8, .2, 1) both; }
+.notice-box { transition: transform .2s ease, box-shadow .2s ease; }
+.notice-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.login-error { animation: shake .45s ease both; }
+
+/* ---- Héroes con brillo animado ---- */
+.alert-hero, .attendance-summary { position: relative; overflow: hidden; }
+.alert-hero::after, .attendance-summary::after {
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .12) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: shimmer 4.5s ease-in-out infinite;
+  content: ''; pointer-events: none;
+}
+
+/* ---- Esqueleto de carga reutilizable ---- */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, #eceff4 25%, #f7f8fb 50%, #eceff4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+/* ---- Spinner reutilizable ---- */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, .35); border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* ---- Transición entre pantallas (View Transitions API) ---- */
+::view-transition-old(root) { animation: .18s ease both fade-out-soft; }
+::view-transition-new(root) { animation: .3s cubic-bezier(.2, .7, .2, 1) both fade-in-soft; }
+@keyframes fade-out-soft { to { opacity: 0; } }
+@keyframes fade-in-soft { from { opacity: 0; } }
+
+/* ---- Barra de desplazamiento con estilo institucional ---- */
+* { scrollbar-width: thin; scrollbar-color: #cfd4de transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: #cfd4de; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: #aeb5c2; }
+::selection { color: var(--color-ink); background: color-mix(in srgb, var(--color-gold) 35%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}

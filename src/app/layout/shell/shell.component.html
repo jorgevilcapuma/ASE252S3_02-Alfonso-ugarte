@@ -1,0 +1,140 @@
+<div class="route-progress" [class.is-active]="cargando()" aria-hidden="true"><span></span></div>
+
+<div class="shell" [class.menu-open]="menuAbierto()">
+  <div class="sidebar-backdrop" (click)="cerrarMenu()" aria-hidden="true"></div>
+
+  <aside class="sidebar" id="menu-lateral">
+    <div class="brand">
+      <img class="brand-crest" [src]="tema.logo" alt="Escudo de la institución">
+      <div class="brand-copy"><strong>{{ marca.codigo }}</strong><span>{{ marca.nombre }}</span></div>
+      <button class="sidebar-close" type="button" aria-label="Cerrar menú" (click)="cerrarMenu()"><app-icono nombre="cerrar" [tamano]="18" /></button>
+    </div>
+
+    <nav class="nav" aria-label="Navegación principal">
+      @for (grupo of grupos; track grupo.nombre; let g = $index) {
+        <div class="nav-group">
+          @if (g > 0) { <span class="nav-caption">{{ grupo.nombre }}</span> }
+          @for (enlace of grupo.enlaces; track enlace.ruta; let i = $index) {
+            <a class="nav-item" [routerLink]="enlace.ruta" routerLinkActive="active" [style.animation-delay.ms]="(g * 3 + i) * 35">
+              <app-icono [nombre]="enlace.icono" [tamano]="20" />
+              <span>{{ enlace.etiqueta }}</span>
+              @if (enlace.alerta && data.cantidadAlertas > 0) { <b class="nav-count" [attr.aria-label]="data.cantidadAlertas + ' faltas hoy'">{{ data.cantidadAlertas }}</b> }
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="sidebar-foot">
+      @for (enlace of enlacesPie; track enlace.ruta) {
+        <a class="nav-item foot-item" [routerLink]="enlace.ruta" routerLinkActive="active">
+          <app-icono [nombre]="enlace.icono" [tamano]="20" />
+          <span>{{ enlace.etiqueta }}</span>
+        </a>
+      }
+      <button type="button" class="nav-item foot-item logout-item" (click)="salir()">
+        <app-icono nombre="salir" [tamano]="20" />
+        <span>Cerrar sesión</span>
+      </button>
+      <a class="quick-action" [routerLink]="accionRapida.ruta"><app-icono nombre="mas" [tamano]="18" /> {{ accionRapida.etiqueta }}</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" type="button" aria-controls="menu-lateral" [attr.aria-expanded]="menuAbierto()" aria-label="Abrir menú" (click)="alternarMenu()">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="title-block">
+          <strong class="app-title">Portal Ugartino Digital</strong>
+          <span class="crumb">{{ perfilLabel }} · {{ tituloPagina }}
+            @if (modo.esLocal) { · <b title="Sin servidor: los datos se guardan en este navegador">Modo local</b> }
+          </span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="date-chip"><app-icono nombre="calendario" [tamano]="16" /> {{ ahora() | date:'EEEE d MMM · HH:mm':'':'es-PE' }}</span>
+        @if (muestraAlertas) {
+          <a class="bell" [class.has-alerts]="data.cantidadAlertas > 0" [routerLink]="rutaAlertas" [attr.aria-label]="'Ver alertas (' + data.cantidadAlertas + ')'" [title]="data.cantidadAlertas + ' faltas registradas hoy'">
+            <app-icono nombre="campana" [tamano]="20" />
+            @if (data.cantidadAlertas > 0) { <i>{{ data.cantidadAlertas > 99 ? '99+' : data.cantidadAlertas }}</i> }
+          </a>
+        }
+        <div class="user-menu">
+          <button class="user-button" type="button" aria-haspopup="menu" [attr.aria-expanded]="menuUsuario()" (click)="alternarMenuUsuario()">
+            <span class="avatar avatar-gold">{{ iniciales }}</span>
+            <span class="user-copy"><strong>{{ primerNombre }}</strong><small>{{ perfilLabel }}</small></span>
+            <app-icono class="chevron" nombre="derecha" [tamano]="16" />
+          </button>
+          @if (menuUsuario()) {
+            <div class="user-dropdown" role="menu">
+              <div class="user-head">
+                <span class="avatar avatar-gold">{{ iniciales }}</span>
+                <div><strong>{{ nombreUsuario }}</strong><small>{{ saludo }} · {{ perfilLabel }}</small></div>
+              </div>
+              @for (enlace of enlacesPie; track enlace.ruta) {
+                <a role="menuitem" [routerLink]="enlace.ruta"><app-icono [nombre]="enlace.icono" [tamano]="18" /> {{ enlace.etiqueta }}</a>
+              }
+              <button role="menuitem" type="button" class="logout" (click)="salir()"><app-icono nombre="salir" [tamano]="18" /> Cerrar sesión</button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="page"><router-outlet /></main>
+
+    <footer class="footer">
+      <strong>{{ data.nombreInstitucion }}</strong>
+      <span>© {{ anio }} {{ data.nombreInstitucion }} · {{ data.direccionInstitucion }}. Todos los derechos reservados.</span>
+      <nav class="footer-links" aria-label="Enlaces de ayuda">
+        <button type="button" (click)="infoPie.set('soporte')">Soporte técnico</button>
+        <button type="button" (click)="infoPie.set('privacidad')">Política de privacidad</button>
+        <button type="button" (click)="infoPie.set('manual')">Manual de usuario</button>
+      </nav>
+    </footer>
+  </div>
+</div>
+
+@if (infoPie(); as info) {
+  <div class="modal-backdrop" (click)="infoPie.set(null)">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="info-pie-titulo" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow">AYUDA</span>
+          <h2 id="info-pie-titulo">{{ info === 'soporte' ? 'Soporte técnico' : info === 'privacidad' ? 'Política de privacidad' : 'Manual de usuario' }}</h2>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="infoPie.set(null)"><app-icono nombre="cerrar" [tamano]="18" /></button>
+      </div>
+      @switch (info) {
+        @case ('soporte') {
+          <p class="modal-description">Para incidencias del portal comunícate con el área de innovación pedagógica:</p>
+          <ul class="info-list">
+            <li><app-icono nombre="correo" [tamano]="18" /> soporte&#64;ie20191.edu.pe</li>
+            <li><app-icono nombre="reloj" [tamano]="18" /> Lunes a viernes, 7:30 a. m. – 3:00 p. m.</li>
+            <li><app-icono nombre="edificio" [tamano]="18" /> Dirección · {{ data.direccionInstitucion }}</li>
+          </ul>
+        }
+        @case ('privacidad') {
+          <p class="modal-description">Los datos de asistencia se usan únicamente para el seguimiento educativo de los estudiantes.</p>
+          <ul class="info-list">
+            <li><app-icono nombre="candado" [tamano]="18" /> Solo el personal autorizado consulta información de cada aula.</li>
+            <li><app-icono nombre="alumnos" [tamano]="18" /> Cada alumno ve únicamente su propio registro.</li>
+            <li><app-icono nombre="info" [tamano]="18" /> En este modo de demostración los datos se guardan en este navegador.</li>
+          </ul>
+        }
+        @case ('manual') {
+          <ol class="info-steps">
+            <li><strong>Selecciona la sección</strong> desde el dashboard o el menú “Selección de sección”.</li>
+            <li><strong>Registra la asistencia</strong> con los botones P / T / F / J o marca a todos presentes.</li>
+            <li><strong>Revisa la vista mensual</strong> y exporta el registro en CSV.</li>
+            <li><strong>Atiende las alertas</strong> de estudiantes con faltas acumuladas y notifica a las familias.</li>
+          </ol>
+        }
+      }
+      <div class="modal-actions"><button class="button button-primary" type="button" (click)="infoPie.set(null)">Entendido</button></div>
+    </section>
+  </div>
+}

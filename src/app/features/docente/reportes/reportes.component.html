@@ -1,0 +1,107 @@
+<div class="header-section">
+  <div>
+    <span class="eyebrow">ESTADÍSTICAS Y EXPEDIENTES</span>
+    <h1>Reportes de Asistencia</h1>
+    <p>Consolidado mensual e indicadores clave de asistencia por aula.</p>
+  </div>
+  <button class="btn-secondary print-hide" (click)="exportarPDF()">
+    Exportar / Imprimir
+  </button>
+</div>
+
+<!-- Filtros de Reporte -->
+<div class="card filter-card print-hide">
+  <div class="filter-group">
+    <label for="cursoSelect">Curso / Aula</label>
+    <select id="cursoSelect" [(ngModel)]="cursoSeleccionado" (ngModelChange)="actualizarMes()">
+      <option value="">Todos los Cursos</option>
+      @for (c of docenteService.cursos(); track c.id) {
+        <option [value]="c.id">{{ c.nombre }} - {{ c.grado }} {{ c.seccion }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="mesSelect">Periodo</label>
+    <select id="mesSelect" [(ngModel)]="mesSeleccionado" (ngModelChange)="actualizarMes()">
+      <option value="">Acumulado del año</option>
+      @for (m of meses; track m.valor) { <option [value]="m.valor">{{ m.nombre }}</option> }
+    </select>
+  </div>
+</div>
+
+<!-- Indicadores Resumen -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">TOTAL EVALUADOS</span>
+    <strong class="stat-value">{{ resumenCurso.total }}</strong>
+  </div>
+
+  <div class="stat-card">
+    <span class="stat-label">PROMEDIO ASISTENCIA</span>
+    <strong 
+      class="stat-value"
+      [class.green]="resumenCurso.promedio >= 90"
+      [class.gold]="resumenCurso.promedio >= 75 && resumenCurso.promedio < 90"
+      [class.red]="resumenCurso.promedio < 75"
+    >
+      {{ resumenCurso.promedio }}%
+    </strong>
+  </div>
+
+  <div class="stat-card">
+    <span class="stat-label">ALUMNOS EN RIESGO</span>
+    <strong class="stat-value red">{{ resumenCurso.enRiesgo }}</strong>
+  </div>
+</div>
+
+<!-- Tabla Reporte Consolidado -->
+<div class="card table-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>DNI</th>
+        <th>ESTUDIANTE</th>
+        <th>CURSO</th>
+        <th>% ASISTENCIA</th>
+        <th>ESTADO</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (alumno of alumnosReporte; track alumno.id) {
+        <tr>
+          <td><code>{{ alumno.dni }}</code></td>
+          <td><strong>{{ alumno.apellidos }}, {{ alumno.nombres }}</strong></td>
+          <td>{{ alumno.cursoNombre }}</td>
+          <td>
+            <strong 
+              [class.text-green]="alumno.porcentajeAsistencia >= 90"
+              [class.text-gold]="alumno.porcentajeAsistencia >= 75 && alumno.porcentajeAsistencia < 90"
+              [class.text-red]="alumno.porcentajeAsistencia < 75"
+            >
+              {{ alumno.porcentajeAsistencia }}%
+            </strong>
+            @if (alumno.sesiones) { <small class="sesiones">{{ alumno.sesiones }} {{ alumno.sesiones === 1 ? 'sesión' : 'sesiones' }}</small> }
+          </td>
+          <td>
+            <span 
+              class="badge" 
+              [class.badge-normal]="alumno.estadoGeneral === 'Normal'" 
+              [class.badge-riesgo]="alumno.estadoGeneral === 'En Riesgo'" 
+              [class.badge-critico]="alumno.estadoGeneral === 'Crítico'"
+            >
+              {{ alumno.estadoGeneral }}
+            </span>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5" class="empty-cell">
+            @if (mesSeleccionado) { No hay sesiones guardadas en este mes. Registra la asistencia desde “Asistencia por curso”. }
+            @else { No existen datos registrados para el filtro seleccionado. }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

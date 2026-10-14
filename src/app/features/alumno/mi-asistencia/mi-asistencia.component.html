@@ -1,0 +1,225 @@
+<div class="student-page-heading">
+  <div>
+    <span class="eyebrow">MI ASISTENCIA</span>
+    <h1>{{ tituloRegistro }}</h1>
+    <p>Consulta estados, porcentajes, historial y justificaciones.</p>
+  </div>
+  <span class="student-date-chip">{{ formatearFechaLarga(alumno.hoy) }}</span>
+</div>
+
+@if (estudiante) {
+  <section class="panel student-attendance-filters">
+    <label>
+      Curso
+      <select [(ngModel)]="idCursoSeleccionado" (ngModelChange)="cambiarCurso()">
+        <option value="">Todos los cursos</option>
+        @for (curso of cursos; track curso.id) {
+          <option [value]="curso.id">{{ curso.nombre }} · {{ curso.codigo }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      Periodo
+      <select [(ngModel)]="periodo" (ngModelChange)="cambiarPeriodo()">
+        <option value="20">Últimas 20 clases</option>
+        <option value="60">Últimas 60 clases</option>
+        <option value="90">Últimas 90 clases</option>
+        <option value="rango">Rango personalizado</option>
+      </select>
+    </label>
+
+    <label>
+      Desde
+      <input type="date" [(ngModel)]="desde" [max]="hasta || alumno.hoy" />
+    </label>
+
+    <label>
+      Hasta
+      <input type="date" [(ngModel)]="hasta" [max]="alumno.hoy" />
+    </label>
+  </section>
+
+  <div class="student-stats-grid">
+    <article class="student-stat-card">
+      <div>
+        <span>ASISTENCIA</span>
+        <b class="student-stat-icon green-stat">↗</b>
+      </div>
+      <strong>{{ resumen.porcentajeAsistencia }}<small>%</small></strong>
+      <p>{{ resumen.total }} clases consideradas</p>
+      <div class="student-progress-track">
+        <span [style.width.%]="resumen.porcentajeAsistencia"></span>
+      </div>
+    </article>
+
+    <article class="student-stat-card">
+      <div>
+        <span>ASISTIÓ</span>
+        <b class="student-stat-icon green-stat">✓</b>
+      </div>
+      <strong>{{ resumen.asistencias }}</strong>
+      <p>Clases con asistencia</p>
+    </article>
+
+    <article class="student-stat-card">
+      <div>
+        <span>TARDANZAS</span>
+        <b class="student-stat-icon gold-stat">◷</b>
+      </div>
+      <strong>{{ resumen.tardanzas }}</strong>
+      <p>Registros tardíos</p>
+    </article>
+
+    <article class="student-stat-card">
+      <div>
+        <span>FALTAS</span>
+        <b class="student-stat-icon red-stat">!</b>
+      </div>
+      <strong>{{ resumen.faltas }}</strong>
+      <p>{{ resumen.porcentajeInasistencia }}% de inasistencia</p>
+    </article>
+
+    <article class="student-stat-card">
+      <div>
+        <span>JUSTIFICADAS</span>
+        <b class="student-stat-icon blue-stat">✓</b>
+      </div>
+      <strong>{{ resumen.justificadas }}</strong>
+      <p>{{ justificaciones.length }} solicitudes</p>
+    </article>
+  </div>
+
+  <section class="panel student-date-filter">
+    <label for="attendance-date">
+      Detalle por fecha
+      <input
+        id="attendance-date"
+        type="date"
+        [(ngModel)]="fechaConsulta"
+        [min]="desde || null"
+        [max]="hasta || alumno.hoy"
+      />
+    </label>
+
+    <div>
+      <span class="eyebrow">ESTADO CONSULTADO</span>
+      <strong [ngClass]="claseEstado(estadoFechaSeleccionada)">
+        {{ etiquetaEstado(estadoFechaSeleccionada) }}
+      </strong>
+    </div>
+
+    @if (cursoSeleccionado) {
+      <span class="selected-course-chip">
+        {{ cursoSeleccionado.nombre }} · {{ cursoSeleccionado.docente }}
+      </span>
+    }
+  </section>
+
+  <section class="panel student-history-panel">
+    <div class="student-panel-heading">
+      <div>
+        <span class="eyebrow">HISTORIAL</span>
+        <h2>Registros de asistencia</h2>
+        <p>Incluye curso, docente, hora y observaciones disponibles.</p>
+      </div>
+      <span class="student-record-count">{{ historial.length }} clases</span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>FECHA</th>
+            <th>CURSO</th>
+            <th>DOCENTE</th>
+            <th>HORA</th>
+            <th>ESTADO</th>
+            <th>OBSERVACIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registro of historial; track registro.fecha + registro.cursoId) {
+            <tr>
+              <td>{{ formatearFechaCorta(registro.fecha) }}</td>
+              <td>{{ registro.cursoNombre || 'Asistencia general' }}</td>
+              <td>{{ registro.docente || '—' }}</td>
+              <td>{{ registro.hora || '—' }}</td>
+              <td>
+                <span class="student-record-status" [ngClass]="claseEstado(registro.estado)">
+                  {{ etiquetaEstado(registro.estado) }}
+                </span>
+              </td>
+              <td>{{ registro.observacion || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-state">No hay registros dentro de este periodo.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel student-justifications">
+    <div class="student-panel-heading">
+      <div>
+        <span class="eyebrow">SOLICITUDES</span>
+        <h2>Mis justificaciones</h2>
+        <p>Consulta el estado y las observaciones del personal.</p>
+      </div>
+      <a class="button button-outline" routerLink="/alumno/justificaciones">Ver solicitudes</a>
+    </div>
+
+    <div class="student-request-list">
+      @for (item of justificaciones; track item.id) {
+        <div class="student-request-row">
+          <div class="request-date">
+            <strong>{{ obtenerDiaMes(item.fecha).dia }}</strong>
+            <span>{{ obtenerDiaMes(item.fecha).mes }}</span>
+          </div>
+          <div class="request-copy">
+            <strong>{{ item.motivo }}</strong>
+            <small>
+              {{ item.cursoId ? alumno.cursoPorId(item.cursoId)?.nombre : 'Asistencia general' }}
+              {{ item.observacion ? ' · ' + item.observacion : '' }}
+            </small>
+          </div>
+          <span
+            class="review-status"
+            [class.review-pending]="item.estado === 'Pendiente'"
+            [class.review-approved]="item.estado === 'Aprobada'"
+            [class.review-observed]="item.estado === 'Observada'"
+          >
+            {{ item.estado === 'Observada' ? 'Rechazada' : item.estado }}
+          </span>
+        </div>
+      } @empty {
+        <div class="student-empty">
+          <strong>Aún no hay solicitudes</strong>
+          <p>Las solicitudes enviadas al colegio aparecerán aquí.</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <div class="notice-box student-demo-note">
+    <div class="notice-icon">i</div>
+    <div>
+      <strong>Registro del colegio</strong>
+      <p>
+        Cada registro lo ingresa tu docente (por curso) o el colegio (asistencia diaria). La asistencia de hoy aparece como sin registrar hasta que se tome.
+      </p>
+    </div>
+  </div>
+} @else {
+  <div class="notice-box">
+    <div class="notice-icon">i</div>
+    <div>
+      <strong>No se encontró el perfil del alumno</strong>
+      <p>Cierra sesión y vuelve a ingresar con tu nombre y DNI.</p>
+    </div>
+    <a class="button button-outline" routerLink="/login">Volver al acceso</a>
+  </div>
+}
