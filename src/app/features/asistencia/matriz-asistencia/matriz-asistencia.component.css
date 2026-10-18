@@ -53,3 +53,4 @@
   .filters-panel, .kpi-row { grid-template-columns: 1fr; }
   .month-table .sticky-name { min-width: 180px; }
 }
+.rules-hint { margin-top: 6px; color: var(--color-muted); font-size: 13px; }

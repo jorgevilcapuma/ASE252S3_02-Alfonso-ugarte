@@ -9,6 +9,7 @@
   <div>
     <h1>Matriz transaccional de asistencia</h1>
     <p>Vista detallada por sección: registro del día y resumen mensual.</p>
+    <p class="rules-hint">Tardanza: llegada después de las <strong>{{ data.reglas.limitePuntualidad }}</strong> (entrada {{ data.reglas.horaEntrada }} + {{ data.reglas.minutosTolerancia }} min). Los docentes corrigen hasta {{ data.reglas.diasEdicionDocente }} días hábiles atrás.</p>
   </div>
   <div class="page-actions">
     <div class="chip-filter" role="tablist" aria-label="Tipo de vista">

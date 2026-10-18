@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ModoDatosService } from '../../../core/services/modo-datos.service';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 import { DocenteService, PerfilDocente } from '../docente.service';
 
@@ -14,6 +15,8 @@ import { DocenteService, PerfilDocente } from '../docente.service';
 export class MiPerfilComponent {
   private readonly docenteService = inject(DocenteService);
   private readonly notificaciones = inject(NotificacionService);
+  /** En modo servidor la ficha del docente solo la edita el administrador (Docentes y personal). */
+  readonly modo = inject(ModoDatosService);
 
   /** Copia editable de la ficha del docente; se guarda en el backend al confirmar. */
   readonly docente = signal<PerfilDocente>({ ...this.docenteService.perfilDocente() });

@@ -3,14 +3,15 @@ import { API_URL, MODO_DATOS } from '../config/api';
 
 export type ModoDatos = 'servidor' | 'local';
 
-const MODO_KEY = 'ugartino-modo';
+/** Clave de la versión anterior, cuando el modo se elegía en el ingreso: se borra para que no quede fijado. */
+const MODO_KEY_ANTERIOR = 'ugartino-modo';
 const MODO_DETECTADO_KEY = 'ugartino-modo-detectado';
 
 /**
  * Decide de dónde salen los datos:
  * - servidor: la API del backend (Spring Boot + SQL Server).
  * - local: una API simulada dentro del navegador (sin backend), con los mismos datos de demostración.
- * Si no hay un modo elegido, se usa el servidor cuando responde y, si no, el modo local.
+ * Lo fija MODO_DATOS (config/api.ts); con 'auto' se usa el servidor si responde y, si no, el modo local.
  */
 @Injectable({ providedIn: 'root' })
 export class ModoDatosService {
@@ -38,22 +39,14 @@ export class ModoDatosService {
     return this.resolucion;
   }
 
-  /** Cambio manual desde la pantalla de ingreso (se recuerda en este navegador). */
-  elegir(modo: ModoDatos): void {
-    try { localStorage.setItem(MODO_KEY, modo); } catch { /* sin almacenamiento: solo esta pestaña */ }
-    this.modo.set(modo);
-    this.automatico.set(false);
-    this.decidido = true;
-    this.resolucion = Promise.resolve(modo);
-  }
-
   /** ¿Responde el backend? (2,5 s como máximo). */
   async servidorDisponible(): Promise<boolean> {
     const control = new AbortController();
     const espera = setTimeout(() => control.abort(), 2500);
     try {
-      const respuesta = await fetch(`${API_URL}/institucion`, { signal: control.signal });
-      return respuesta.ok;
+      // Sin sesión el backend responde 401: basta con que conteste para saber que está en ejecución.
+      const respuesta = await fetch(`${API_URL}/auth/sesion`, { signal: control.signal });
+      return respuesta.status < 500;
     } catch {
       return false;
     } finally {
@@ -62,10 +55,8 @@ export class ModoDatosService {
   }
 
   private preferido(): ModoDatos | null {
-    let guardado: string | null = null;
-    try { guardado = localStorage.getItem(MODO_KEY); } catch { /* ignorado */ }
-    const valor = guardado ?? MODO_DATOS;
-    if (valor === 'local' || valor === 'servidor') return valor;
+    try { localStorage.removeItem(MODO_KEY_ANTERIOR); } catch { /* ignorado */ }
+    if (MODO_DATOS === 'local' || MODO_DATOS === 'servidor') return MODO_DATOS;
     // Detección automática ya hecha en esta pestaña: no se vuelve a consultar al servidor en cada recarga.
     let detectado: string | null = null;
     try { detectado = sessionStorage.getItem(MODO_DETECTADO_KEY); } catch { /* ignorado */ }

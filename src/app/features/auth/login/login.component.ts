@@ -5,7 +5,6 @@ import { ETIQUETA_PERFIL } from '../../../core/config/navegacion';
 import { ApiService } from '../../../core/services/api.service';
 import { AsistenciaService } from '../../../core/services/asistencia.service';
 import { AuthService, DatosIngreso, IngresoValido, PerfilAcceso } from '../../../core/services/auth.service';
-import { ModoDatos, ModoDatosService } from '../../../core/services/modo-datos.service';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 import { TemaService } from '../../../core/services/tema.service';
 import { IconoComponent } from '../../../shared/components/icono/icono.component';
@@ -27,12 +26,10 @@ const DEMO: Record<PerfilAcceso, { correo?: string; contrasena?: string; nombre?
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
-  private readonly data = inject(AsistenciaService);
+  readonly data = inject(AsistenciaService);
   private readonly router = inject(Router);
   private readonly notificaciones = inject(NotificacionService);
   readonly tema = inject(TemaService);
-  readonly modo = inject(ModoDatosService);
-  private readonly api = inject(ApiService);
 
   readonly etiquetas = ETIQUETA_PERFIL;
   readonly perfiles: PerfilAcceso[] = ['administrador', 'docente', 'alumno'];
@@ -50,7 +47,11 @@ export class LoginComponent {
   /** Nombre que se saluda en la pantalla "Autenticando sesión". */
   nombreIngreso = '';
 
-  get nombreCorto(): string { return this.data.nombreInstitucion.replace(/\s*Alfonso Ugarte\s*/i, '').trim() || this.data.nombreInstitucion; }
+  /** "Alfonso Ugarte" a partir de "I.E. 20191 Alfonso Ugarte" (Configuración → Datos del colegio). */
+  get nombreColegio(): string { return this.data.nombreInstitucion.replace(/^\s*(I\.?\s*E\.?|IE)\s*(N°\s*)?\d*\s*/i, '').trim() || this.data.nombreInstitucion; }
+  /** Primera parte de la dirección: "San Vicente de Cañete". */
+  get ciudadTitulo(): string { return this.data.direccionInstitucion.split(',')[0].trim(); }
+  get ciudad(): string { return this.ciudadTitulo.toUpperCase(); }
 
   /** Al cambiar de perfil se completan los datos de una cuenta de demostración. */
   onPerfilChange(): void {
@@ -126,33 +127,8 @@ export class LoginComponent {
     }, DURACION_AUTENTICACION);
   }
 
-  /** Cambia entre el backend y el modo local; si el servidor no responde, lo avisa. */
-  async cambiarModo(modo: ModoDatos): Promise<void> {
-    if (modo === this.modo.modo() && !this.modo.automatico()) return;
-    this.mensaje = '';
-    if (modo === 'servidor' && !(await this.modo.servidorDisponible())) {
-      this.mensaje = 'El servidor no responde en http://localhost:8080. Inícialo o sigue en el modo local.';
-      return;
-    }
-    this.modo.elegir(modo);
-    this.auth.signOut();
-    await this.data.cargarInstitucion();
-    this.notificaciones.info(modo === 'local' ? 'Modo local' : 'Modo servidor',
-      modo === 'local' ? 'Los datos se guardan en este navegador.' : 'Los datos se leen y guardan en el backend.');
-  }
-
-  reiniciarLocal(): void {
-    this.api.reiniciarDatosLocales();
-    this.auth.signOut();
-    void this.data.cargarInstitucion();
-    this.notificaciones.info('Datos reiniciados', 'El modo local volvió a los datos de demostración.');
-  }
-
   olvideContrasena(): void {
     this.notificaciones.info('Recuperar contraseña', 'Solicita el restablecimiento al administrador del portal (admin@ie20191.edu.pe).');
   }
 
-  solicitarRegistro(): void {
-    this.notificaciones.info('Registro institucional', 'Las cuentas las crea el administrador desde Gestión de usuarios.');
-  }
 }

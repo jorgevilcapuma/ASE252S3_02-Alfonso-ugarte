@@ -21,7 +21,9 @@ export class MisCursosComponent {
     return this.alumno.etiquetaSeccion;
   }
 
-  porcentajeAsistencia(cursoId: string): number {
-    return this.alumno.resumen({ cursoId }).porcentajeAsistencia;
+  /** Porcentaje del curso, o "Sin registros" si el docente aún no tomó asistencia en él. */
+  porcentajeAsistencia(cursoId: string): string {
+    const resumen = this.alumno.resumen({ cursoId, desde: '0000-01-01' });
+    return resumen.total ? `${resumen.porcentajeAsistencia}%` : 'Sin registros';
   }
 }

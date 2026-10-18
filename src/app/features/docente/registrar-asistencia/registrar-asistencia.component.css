@@ -200,3 +200,4 @@ code {
 .sum-chip.gold { color: var(--color-warning); background: var(--color-warning-soft); }
 .sum-chip.red { color: var(--color-danger); background: var(--color-danger-soft); }
 .sum-saved { margin-left: auto; color: var(--color-success); font-size: 13px; font-weight: 600; }
+.rules-hint { margin-top: 6px; color: var(--color-muted); font-size: 13px; }

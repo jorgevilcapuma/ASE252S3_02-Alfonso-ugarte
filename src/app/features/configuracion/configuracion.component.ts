@@ -2,12 +2,13 @@ import { Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AsistenciaService } from '../../core/services/asistencia.service';
+import { ModoDatosService } from '../../core/services/modo-datos.service';
 import { NotificacionService } from '../../core/services/notificacion.service';
 import { LOGO_POR_DEFECTO, TEMA_POR_DEFECTO, TemaService } from '../../core/services/tema.service';
 import { UsuariosService } from '../../core/services/usuarios.service';
 import { IconoComponent, NombreIcono } from '../../shared/components/icono/icono.component';
 
-type Pestana = 'datos' | 'usuarios' | 'estructura' | 'identidad';
+type Pestana = 'datos' | 'reglas' | 'usuarios' | 'estructura' | 'identidad';
 
 const LADO_MAXIMO_LOGO = 320;
 
@@ -23,9 +24,12 @@ export class ConfiguracionComponent {
   readonly tema = inject(TemaService);
   readonly usuarios = inject(UsuariosService);
   private readonly notificaciones = inject(NotificacionService);
+  /** En modo servidor la hora de entrada, la tolerancia y el plazo los fija el backend (application.yml). */
+  readonly modo = inject(ModoDatosService);
 
   readonly pestanas: { id: Pestana; titulo: string; detalle: string; icono: NombreIcono }[] = [
     { id: 'datos', titulo: 'Datos del colegio', detalle: 'Información institucional general', icono: 'edificio' },
+    { id: 'reglas', titulo: 'Reglas de asistencia', detalle: 'Entrada, tolerancia, alertas y plazos', icono: 'reloj' },
     { id: 'usuarios', titulo: 'Gestión de usuarios', detalle: 'Roles, permisos y cuentas', icono: 'usuarios' },
     { id: 'estructura', titulo: 'Estructura académica', detalle: 'Niveles, grados y secciones', icono: 'estructura' },
     { id: 'identidad', titulo: 'Identidad visual', detalle: 'Logotipo y colores institucionales', icono: 'paleta' }
@@ -38,13 +42,19 @@ export class ConfiguracionComponent {
   guardando = false;
   private guardado = false;
 
+  /** Reglas de asistencia: se guardan aparte con su propio botón. */
+  reglas = this.copiaReglas();
+  guardandoReglas = false;
+
   constructor() {
     // Si se sale sin guardar, se descarta la vista previa de colores.
     inject(DestroyRef).onDestroy(() => { if (!this.guardado) this.tema.aplicar(this.tema.tema()); });
     // Datos vigentes del backend; si el formulario aún no se editó, se actualiza con ellos.
     const inicial = JSON.stringify(this.formulario);
+    const reglasIniciales = JSON.stringify(this.reglas);
     void this.data.cargarInstitucion().then(() => {
       if (JSON.stringify(this.formulario) === inicial) this.formulario = this.copiaActual();
+      if (JSON.stringify(this.reglas) === reglasIniciales) this.reglas = this.copiaReglas();
     });
     this.usuarios.asegurar().catch(() => undefined);
   }
@@ -59,6 +69,37 @@ export class ConfiguracionComponent {
       colorSecundario: tema.colorSecundario,
       logo: tema.logo
     };
+  }
+
+  private copiaReglas() {
+    const { horaEntrada, minutosTolerancia, faltasPreventivas, faltasCriticas, diasEdicionDocente } = this.data.reglas;
+    return { horaEntrada, minutosTolerancia, faltasPreventivas, faltasCriticas, diasEdicionDocente };
+  }
+
+  get hayCambiosReglas(): boolean { return JSON.stringify(this.reglas) !== JSON.stringify(this.copiaReglas()); }
+
+  /** Vista previa del límite de puntualidad con los valores del formulario. */
+  get limiteVista(): string {
+    const [h, m] = (this.reglas.horaEntrada || '00:00').split(':').map(Number);
+    const total = h * 60 + m + (Number(this.reglas.minutosTolerancia) || 0);
+    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  }
+
+  async guardarReglas(): Promise<void> {
+    if (this.guardandoReglas) return;
+    this.guardandoReglas = true;
+    const error = await this.data.guardarReglas({
+      ...this.reglas,
+      minutosTolerancia: Number(this.reglas.minutosTolerancia), faltasPreventivas: Number(this.reglas.faltasPreventivas),
+      faltasCriticas: Number(this.reglas.faltasCriticas), diasEdicionDocente: Number(this.reglas.diasEdicionDocente)
+    });
+    this.guardandoReglas = false;
+    if (error) {
+      this.notificaciones.error('No se pudieron guardar las reglas', error);
+      return;
+    }
+    this.reglas = this.copiaReglas();
+    this.notificaciones.exito('Reglas guardadas', 'Se aplican desde ahora en las marcaciones, las alertas y los plazos de corrección.');
   }
 
   get logoVista(): string { return this.formulario.logo || LOGO_POR_DEFECTO; }

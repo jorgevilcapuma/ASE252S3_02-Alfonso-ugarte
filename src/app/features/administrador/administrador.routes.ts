@@ -6,7 +6,8 @@ import { SeleccionSeccionComponent } from '../asistencia/seleccion-seccion/selec
 import { ConfiguracionComponent } from '../configuracion/configuracion.component';
 import { DashboardComponent } from '../dashboard/dashboard.component';
 import { FasesComponent } from '../proyecto/fases/fases.component';
-import { MatriculasComponent } from './matriculas/matriculas.component';
+import { AsistenciaPersonalComponent } from './asistencia-personal/asistencia-personal.component';
+import { GestionComponent } from './gestion/gestion.component';
 import { UsuariosComponent } from './usuarios/usuarios.component';
 
 export const administradorRoutes: Routes = [
@@ -18,6 +19,10 @@ export const administradorRoutes: Routes = [
   { path: 'fases', component: FasesComponent },
   { path: 'configuracion', component: ConfiguracionComponent },
   { path: 'usuarios', component: UsuariosComponent },
-  { path: 'matriculas', component: MatriculasComponent },
+  { path: 'asistencia-personal', component: AsistenciaPersonalComponent },
+  { path: 'docentes', component: GestionComponent, data: { entidad: 'docentes' } },
+  { path: 'estudiantes', component: GestionComponent, data: { entidad: 'estudiantes' } },
+  { path: 'cursos', component: GestionComponent, data: { entidad: 'cursos' } },
+  { path: 'grados-secciones', component: GestionComponent, data: { entidad: 'grados-secciones' } },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
 ];

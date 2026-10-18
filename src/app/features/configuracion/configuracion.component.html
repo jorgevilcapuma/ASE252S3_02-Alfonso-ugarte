@@ -39,6 +39,42 @@
           </label>
         </div>
       }
+      @case ('reglas') {
+        <h2><app-icono nombre="reloj" [tamano]="20" /> Reglas de asistencia</h2>
+        <div class="form-grid">
+          <label class="field">Hora de entrada
+            <input type="time" [(ngModel)]="reglas.horaEntrada" [disabled]="!modo.esLocal">
+            <small class="field-hint">Hora oficial de ingreso del personal.</small>
+          </label>
+          <label class="field">Tolerancia (minutos)
+            <input type="number" min="0" max="60" [(ngModel)]="reglas.minutosTolerancia" [disabled]="!modo.esLocal">
+            <small class="field-hint">Después de las <strong>{{ limiteVista }}</strong> la entrada cuenta como tardanza.</small>
+          </label>
+          <label class="field">Faltas para alerta preventiva
+            <input type="number" min="1" max="30" [(ngModel)]="reglas.faltasPreventivas">
+            <small class="field-hint">En los últimos {{ data.ventanaAlertas }} días hábiles.</small>
+          </label>
+          <label class="field">Faltas para alerta crítica
+            <input type="number" min="2" max="30" [(ngModel)]="reglas.faltasCriticas">
+            <small class="field-hint">Debe ser mayor que la preventiva.</small>
+          </label>
+          <label class="field wide">Plazo de corrección del docente (días hábiles)
+            <input type="number" min="0" max="30" [(ngModel)]="reglas.diasEdicionDocente" [disabled]="!modo.esLocal">
+            <small class="field-hint">El docente corrige la asistencia de hoy y de los últimos {{ reglas.diasEdicionDocente }} días hábiles; las fechas anteriores solo las cambia el administrador.</small>
+          </label>
+        </div>
+        @if (!modo.esLocal) {
+          <p class="field-hint server-note">La hora de entrada, la tolerancia y el plazo del docente los aplica el servidor
+            (variables <code>HORA_ENTRADA</code>, <code>MINUTOS_TOLERANCIA</code> y <code>DIAS_EDICION_DOCENTE</code> del backend).
+            Aquí puedes ajustar los umbrales de las alertas tempranas.</p>
+        }
+        <div class="rules-actions">
+          <button class="button button-primary" type="button" (click)="guardarReglas()" [disabled]="!hayCambiosReglas || guardandoReglas">
+            <app-icono nombre="guardar" [tamano]="18" /> {{ guardandoReglas ? 'Guardando…' : 'Guardar reglas' }}
+          </button>
+          <a class="text-action" routerLink="../asistencia-personal">Ver asistencia del personal →</a>
+        </div>
+      }
       @case ('usuarios') {
         <h2><app-icono nombre="usuarios" [tamano]="20" /> Gestión de usuarios</h2>
         <div class="stats">
@@ -66,7 +102,6 @@
           Secciones activas: <strong>{{ data.secciones.join(', ') }}</strong> · {{ data.secciones.length }} por grado ·
           @for (seccion of data.secciones; track seccion) { <span class="turn">{{ seccion }}: {{ data.turnoSeccion(seccion) }}</span> }
         </div>
-        <a class="text-action" routerLink="../matriculas">Gestionar matrículas y traslados →</a>
       }
       @case ('identidad') {
         <h2><app-icono nombre="paleta" [tamano]="20" /> Identidad visual</h2>
@@ -112,5 +147,5 @@
 
 <div class="notice-box">
   <div class="notice-icon"><app-icono nombre="info" [tamano]="20" /></div>
-  <div><strong>Datos institucionales</strong><p>Los cambios se guardan en la base de datos del colegio y se aplican en todos los equipos al ingresar al portal.</p></div>
+  <div><strong>Datos institucionales</strong><p>{{ modo.esLocal ? 'Los cambios se guardan en este navegador (modo local).' : 'El nombre, los colores y el logotipo se guardan en este navegador: el backend solo almacena las 8 tablas del sistema de asistencia.' }}</p></div>
 </div>

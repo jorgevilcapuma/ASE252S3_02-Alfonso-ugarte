@@ -3,3 +3,4 @@
 .users-filters .search-box input { min-height: 40px; border-radius: 999px; }
 .users-panel { margin-top: 20px; }
 @media (max-width: 640px) { .users-filters .search-box { width: 100%; } }
+.cuentas-nota { margin-top: 6px; color: var(--color-muted); font-size: 13px; }

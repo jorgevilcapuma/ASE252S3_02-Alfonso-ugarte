@@ -13,6 +13,20 @@ export const VENTANA_ALERTAS = 20;
 export const FALTAS_CRITICAS = 3;
 export const FALTAS_PREVENTIVAS = 2;
 
+/** Reglas de asistencia del colegio (Configuración → Reglas de asistencia). */
+export interface ReglasAsistencia {
+  horaEntrada: string;
+  minutosTolerancia: number;
+  limitePuntualidad: string;
+  faltasPreventivas: number;
+  faltasCriticas: number;
+  diasEdicionDocente: number;
+}
+
+export const REGLAS_POR_DEFECTO: ReglasAsistencia = {
+  horaEntrada: '07:45', minutosTolerancia: 10, limitePuntualidad: '07:55', faltasPreventivas: FALTAS_PREVENTIVAS, faltasCriticas: FALTAS_CRITICAS, diasEdicionDocente: 5
+};
+
 export interface FaseProyecto { semana: string; titulo: string; actividad: string; producto: string; estado: string; }
 
 interface SeccionInfo { id: string; nivel: NivelEducativo; grado: string; letra: string; turno: 'Mañana' | 'Tarde'; total: number; }
@@ -21,7 +35,9 @@ interface EstructuraApi {
   nombre: NivelEducativo;
   grados: { codigo: string; etiqueta: string; secciones: { id: number; letra: string; turno: 'Mañana' | 'Tarde'; totalEstudiantes: number }[] }[];
 }
-interface InstitucionApi { nombre: string; codigoModular: string; direccion: string; colorPrincipal: string; colorSecundario: string; logo: string; }
+interface InstitucionApi {
+  nombre: string; codigoModular: string; direccion: string; colorPrincipal: string; colorSecundario: string; logo: string; reglas?: ReglasAsistencia;
+}
 interface RegistroDiaApi { estudianteId: number; fecha: string; estado: EstadoAsistencia; }
 interface AlertasApi {
   parametros: { ventanaDias: number; faltasCriticas: number; faltasPreventivas: number };
@@ -63,6 +79,7 @@ export class AsistenciaService {
   nombreInstitucion = 'I.E. 20191 Alfonso Ugarte';
   direccionInstitucion = 'San Vicente de Cañete, Lima, Perú';
   codigoModular = '0285940';
+  reglas: ReglasAsistencia = { ...REGLAS_POR_DEFECTO };
 
   private seccionesInfo: SeccionInfo[] = [];
   private etiquetas: Record<string, string> = {};
@@ -93,6 +110,7 @@ export class AsistenciaService {
       this.nombreInstitucion = i.nombre;
       this.direccionInstitucion = i.direccion;
       this.codigoModular = i.codigoModular;
+      if (i.reglas) this.reglas = i.reglas;
       this.tema.establecer({ colorPrincipal: i.colorPrincipal, colorSecundario: i.colorSecundario, logo: i.logo ?? '' });
       this.cambio();
     } catch { /* sin conexión: se mantienen los valores conocidos */ }
@@ -132,6 +150,12 @@ export class AsistenciaService {
     }
     this.secciones = [...new Set(this.seccionesInfo.map(s => s.letra))].sort();
     this.cambio();
+  }
+
+  /** Tras cambiar aulas, estudiantes o cursos: recarga la estructura y fuerza a recargar el padrón la próxima vez. */
+  async recargarEstructura(): Promise<void> {
+    this.cargaGestion = null;
+    await this.cargarEstructura().catch(() => undefined);
   }
 
   async cargarFases(): Promise<void> {
@@ -271,11 +295,6 @@ export class AsistenciaService {
     return estudiantes.length === 0 ? 0 : Math.round(registrados / estudiantes.length * 100);
   }
 
-  /** En el backend toda matrícula se puede anular: si tiene historial, se retira en lugar de borrarse. */
-  esMatriculaManual(_estudianteId: string): boolean {
-    return true;
-  }
-
   // =====================================================================
   // Cambios (se guardan en el backend)
   // =====================================================================
@@ -370,42 +389,18 @@ export class AsistenciaService {
     }
   }
 
-  /** Matrícula manual desde el módulo del administrador. Devuelve el estudiante creado o el mensaje de error. */
-  async matricularEstudiante(datos: Pick<Estudiante, 'nombre' | 'dni' | 'nivel' | 'grado' | 'seccion'> & { genero?: string }): Promise<Estudiante | string> {
+  /** Hora de entrada, tolerancia, umbrales de alertas y plazo de corrección del docente. Devuelve el error o null. */
+  async guardarReglas(reglas: Omit<ReglasAsistencia, 'limitePuntualidad'>): Promise<string | null> {
     try {
-      const creado = aEstudiante(await this.api.post<EstudianteApi>('/matriculas', {
-        nombre: datos.nombre, dni: datos.dni.trim(), genero: datos.genero || undefined, nivel: datos.nivel, grado: datos.grado, seccion: datos.seccion
-      }));
-      this.estudiantes = [...this.estudiantes, creado];
+      const i = await this.api.put<InstitucionApi>('/institucion/reglas', reglas);
+      if (i.reglas) this.reglas = i.reglas;
+      this.faltasCriticas = this.reglas.faltasCriticas;
+      this.faltasPreventivas = this.reglas.faltasPreventivas;
       this.cambio();
-      return creado;
-    } catch (error) {
-      return ApiService.mensaje(error);
-    }
-  }
-
-  /** Cambia nivel, grado o sección conservando el historial de asistencia. Devuelve null o el error. */
-  async trasladarEstudiante(estudiante: Estudiante, nivel: NivelEducativo, grado: string, seccion: string): Promise<string | null> {
-    try {
-      const actualizado = aEstudiante(await this.api.put<EstudianteApi>(`/matriculas/${estudiante.matriculaId}/traslado`, { nivel, grado, seccion }));
-      this.estudiantes = this.estudiantes.map(e => e.id === actualizado.id ? actualizado : e);
-      this.cambio();
+      if (this.cargaGestion) void this.cargarAlertas().catch(() => undefined);
       return null;
     } catch (error) {
       return ApiService.mensaje(error);
-    }
-  }
-
-  /** Anula la matrícula: el backend la elimina o, si hay historial, la retira. Devuelve el mensaje del servidor. */
-  async retirarEstudiante(estudiante: Estudiante): Promise<{ ok: boolean; mensaje: string }> {
-    try {
-      const r = await this.api.delete<{ mensaje: string }>(`/matriculas/${estudiante.matriculaId}`);
-      this.estudiantes = this.estudiantes.filter(e => e.id !== estudiante.id);
-      this.cambio();
-      this.programarAlertas();
-      return { ok: true, mensaje: r.mensaje };
-    } catch (error) {
-      return { ok: false, mensaje: ApiService.mensaje(error) };
     }
   }
 

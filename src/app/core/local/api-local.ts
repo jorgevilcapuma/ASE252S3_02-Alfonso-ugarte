@@ -1,3 +1,5 @@
+import { DATOS_DEMO_LOCAL } from '../config/api';
+import { FASES_PROYECTO } from '../config/proyecto';
 import { ErrorApi } from '../services/error-api';
 
 /**
@@ -29,11 +31,16 @@ interface Justificacion {
   estado: 'Pendiente' | 'Aprobada' | 'Observada'; estadoPrevio: Estado | 'pendiente'; observacion?: string; fechaSolicitud: string;
   fechaRevision?: string; revisadoPor?: string;
 }
+interface Reglas { horaEntrada: string; minutosTolerancia: number; faltasPreventivas: number; faltasCriticas: number; diasEdicionDocente: number; }
+interface Personal { id: number; nombres: string; apellidos: string; dni: string; cargo: string; area?: string; }
+interface MarcacionPersonal { personalId: number; fecha: string; horaEntrada: string; horaSalida?: string; estado: 'puntual' | 'tardanza'; observacion?: string; }
 interface Comunicado { id: number; titulo: string; contenido: string; prioridad: 'Alta' | 'Media' | 'Baja'; asignacionId?: number; autorId?: number; fechaCreacion: string; }
 interface Bd {
   version: number;
+  /** true si se sembraron los datos de demostración. */
+  demo?: boolean;
   siguienteId: number;
-  institucion: { nombre: string; codigoModular: string; direccion: string; colorPrincipal: string; colorSecundario: string; logo: string };
+  institucion: { nombre: string; codigoModular: string; direccion: string; colorPrincipal: string; colorSecundario: string; logo: string; reglas: Reglas };
   niveles: { nombre: string; grados: { codigo: string; etiqueta: string }[] }[];
   secciones: Seccion[];
   fases: { semana: string; titulo: string; actividad: string; producto: string; estado: string }[];
@@ -46,14 +53,15 @@ interface Bd {
   justificaciones: Justificacion[];
   avisos: { id: number; estudianteId: number; enviadoEn: string; faltas: number }[];
   comunicados: Comunicado[];
+  personal: Personal[];
+  asistenciaPersonal: MarcacionPersonal[];
 }
 
 const BD_KEY = 'ugartino-local-bd';
 const SESION_KEY = 'ugartino-sesion';
-const VERSION = 1;
+const VERSION = 3;
 const VENTANA = 20;
-const CRITICAS = 3;
-const PREVENTIVAS = 2;
+const REGLAS_POR_DEFECTO: Reglas = { horaEntrada: '07:45', minutosTolerancia: 10, faltasPreventivas: 2, faltasCriticas: 3, diasEdicionDocente: 5 };
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const ABREVIATURA: Record<string, string> = { Lunes: 'Lun', Martes: 'Mar', 'Miércoles': 'Mié', Jueves: 'Jue', Viernes: 'Vie' };
 
@@ -70,6 +78,9 @@ const diaSemana = (fecha: string) => DIAS[new Date(`${fecha}T12:00:00`).getDay()
 const clave = (texto: string) => texto.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').toLowerCase();
 const limpiar = (texto: unknown) => typeof texto === 'string' && texto.trim() ? texto.trim().replace(/\s+/g, ' ') : undefined;
 const texto = (valor: unknown) => typeof valor === 'string' ? valor : '';
+const minutos = (hora: string) => { const [h, m] = hora.split(':').map(Number); return h * 60 + m; };
+const hora = (total: number) => `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+const horaActual = () => { const d = new Date(); return hora(d.getHours() * 60 + d.getMinutes()); };
 
 function diasHabiles(cantidad: number, hasta: string): string[] {
   const dias: string[] = [];
@@ -123,9 +134,14 @@ function ordenarHorarios(horarios: Horario[]): Horario[] {
 // ---------------------------------------------------------------------
 
 export class ApiLocal {
-  private bd: Bd = this.cargar();
+  private bd: Bd;
 
-  /** Vuelve a los datos de demostración iniciales. */
+  /** conDemo: siembra los datos de demostración; si no, empieza solo con el administrador y las aulas. */
+  constructor(private readonly conDemo = DATOS_DEMO_LOCAL) {
+    this.bd = this.cargar();
+  }
+
+  /** Vuelve a los datos iniciales. */
   reiniciar(): void {
     this.bd = this.sembrar();
     this.guardar();
@@ -150,8 +166,9 @@ export class ApiLocal {
     const fecha = '(\\d{4}-\\d{2}-\\d{2})';
     return [
       ['POST', /^\/auth\/login$/, (_, __, c) => this.login(c)],
-      ['GET', /^\/institucion$/, () => this.bd.institucion],
+      ['GET', /^\/institucion$/, () => this.institucionApi()],
       ['PUT', /^\/institucion$/, (_, __, c) => this.guardarInstitucion(c)],
+      ['PUT', /^\/institucion\/reglas$/, (_, __, c) => this.guardarReglas(c)],
       ['GET', /^\/estructura$/, () => this.estructura()],
       ['GET', /^\/fases$/, () => this.bd.fases],
       ['GET', /^\/matriculas$/, () => ({ contenido: this.activos().map(e => this.estudianteApi(e)), totalPaginas: 1 })],
@@ -167,6 +184,11 @@ export class ApiLocal {
       ['POST', /^\/justificaciones$/, (_, __, c) => this.solicitarJustificacion(c)],
       ['PATCH', new RegExp(`^/justificaciones/${id}/revision$`), ([j], __, c) => this.revisar(+j, c)],
       ['GET', /^\/alertas$/, () => this.alertas()],
+      ['GET', /^\/asistencia-personal$/, (_, p) => this.personalDelDia(p['fecha'] || hoy())],
+      ['GET', /^\/asistencia-personal\/reporte$/, (_, p) => this.reportePersonal(p['mes'] || hoy().slice(0, 7))],
+      ['PUT', new RegExp(`^/asistencia-personal/${id}/entrada$`), ([m], __, c) => this.marcarEntrada(+m, c)],
+      ['PUT', new RegExp(`^/asistencia-personal/${id}/salida$`), ([m], __, c) => this.marcarSalida(+m, c)],
+      ['DELETE', new RegExp(`^/asistencia-personal/${id}/${fecha}$`), ([m, f]) => this.anularMarcacion(+m, f)],
       ['POST', /^\/alertas\/avisos$/, (_, __, c) => this.avisar(c)],
       ['GET', /^\/usuarios$/, () => this.bd.usuarios.map(u => this.usuarioApi(u))],
       ['POST', /^\/usuarios$/, (_, __, c) => this.guardarUsuario(c)],
@@ -243,10 +265,36 @@ export class ApiLocal {
     }
     if (errores.length) throw error(400, errores.length > 1 ? 'Revisa los datos enviados.' : errores[0], errores);
     this.bd.institucion = {
+      ...this.bd.institucion,
       nombre: limpiar(c['nombre'])!, codigoModular: texto(c['codigoModular']), direccion: limpiar(c['direccion'])!,
       colorPrincipal: texto(c['colorPrincipal']).toLowerCase(), colorSecundario: texto(c['colorSecundario']).toLowerCase(), logo: texto(c['logo'])
     };
-    return this.bd.institucion;
+    return this.institucionApi();
+  }
+
+  private get reglas(): Reglas { return this.bd.institucion.reglas; }
+
+  private institucionApi() {
+    const r = this.reglas;
+    return { ...this.bd.institucion, reglas: { ...r, limitePuntualidad: hora(minutos(r.horaEntrada) + r.minutosTolerancia) } };
+  }
+
+  private guardarReglas(c: Cuerpo) {
+    const entero = (campo: string) => Number.isInteger(c[campo]) ? c[campo] as number : NaN;
+    const r: Reglas = {
+      horaEntrada: texto(c['horaEntrada']).slice(0, 5), minutosTolerancia: entero('minutosTolerancia'),
+      faltasPreventivas: entero('faltasPreventivas'), faltasCriticas: entero('faltasCriticas'), diasEdicionDocente: entero('diasEdicionDocente')
+    };
+    const errores: string[] = [];
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.horaEntrada)) errores.push('Indica la hora de entrada (HH:mm).');
+    if (!(r.minutosTolerancia >= 0 && r.minutosTolerancia <= 60)) errores.push('La tolerancia va de 0 a 60 minutos.');
+    if (!(r.faltasPreventivas >= 1 && r.faltasPreventivas <= 30)) errores.push('Las faltas para alerta preventiva van de 1 a 30.');
+    if (!(r.faltasCriticas >= 2 && r.faltasCriticas <= 30)) errores.push('Las faltas para alerta crítica van de 2 a 30.');
+    if (!(r.diasEdicionDocente >= 0 && r.diasEdicionDocente <= 30)) errores.push('El plazo de corrección del docente va de 0 a 30 días hábiles.');
+    if (errores.length) throw error(400, errores.length > 1 ? 'Revisa los datos enviados.' : errores[0], errores);
+    if (r.faltasCriticas <= r.faltasPreventivas) throw error(400, 'Las faltas para alerta crítica deben ser más que las de alerta preventiva.');
+    this.bd.institucion.reglas = r;
+    return this.institucionApi();
   }
 
   private estructura() {
@@ -370,6 +418,15 @@ export class ApiLocal {
     if (finDeSemana(fecha)) throw error(400, 'No se registra asistencia en sábado ni domingo.');
   }
 
+  /** Un docente solo corrige hoy y los últimos `diasEdicionDocente` días hábiles; antes, solo el administrador. */
+  private validarPlazoDocente(fecha: string): void {
+    if (this.sesion?.perfil !== 'docente') return;
+    const dias = this.reglas.diasEdicionDocente;
+    if (fecha < diasHabiles(dias + 1, hoy())[0]) {
+      throw error(403, `La asistencia del ${fecha} ya está cerrada: los docentes pueden corregir hasta ${dias} días hábiles atrás. Solicita el cambio al administrador.`);
+    }
+  }
+
   private validarEstado(estado: string): void {
     if (!['presente', 'tardanza', 'falta', 'justificado', 'pendiente'].includes(estado)) {
       throw error(400, `Valor no válido para estado de asistencia: '${estado}'. Valores permitidos: presente, tardanza, falta, justificado, pendiente.`);
@@ -397,6 +454,7 @@ export class ApiLocal {
     if (e.estadoMatricula !== 'Activa') throw error(409, 'La matrícula del estudiante está retirada.');
     this.validarEstado(estado);
     this.validarFecha(fecha);
+    this.validarPlazoDocente(fecha);
     this.fijar(estudianteId, fecha, estado);
     return { fecha, estado };
   }
@@ -406,6 +464,7 @@ export class ApiLocal {
     const registros = (c['registros'] as { estudianteId: number; estado: string }[] | undefined) ?? [];
     if (!fecha || !registros.length) throw error(400, 'Revisa los datos enviados.', ['Indica la fecha de la asistencia.', 'Envía al menos un registro de asistencia.']);
     this.validarFecha(fecha);
+    this.validarPlazoDocente(fecha);
     const delAula = new Set(this.activos().filter(e => e.seccionId === seccionId).map(e => e.id));
     for (const r of registros) {
       this.validarEstado(r.estado);
@@ -509,6 +568,110 @@ export class ApiLocal {
   }
 
   // =====================================================================
+  // Asistencia del personal (entrada y salida)
+  // =====================================================================
+
+  private minutosTarde(m: MarcacionPersonal): number {
+    return m.estado === 'tardanza' ? Math.max(0, minutos(m.horaEntrada) - minutos(this.reglas.horaEntrada)) : 0;
+  }
+
+  private filaPersonal(p: Personal, m: MarcacionPersonal | undefined) {
+    return {
+      personalId: p.id, nombreCompleto: `${p.apellidos}, ${p.nombres}`, dni: p.dni, cargo: p.cargo, area: p.area,
+      horaEntrada: m?.horaEntrada, horaSalida: m?.horaSalida, estado: m?.estado ?? 'sin-marcar',
+      minutosTarde: m ? this.minutosTarde(m) : 0, observacion: m?.observacion
+    };
+  }
+
+  private personalOrdenado(): Personal[] {
+    return [...this.bd.personal].sort((a, b) => `${a.apellidos} ${a.nombres}`.localeCompare(`${b.apellidos} ${b.nombres}`));
+  }
+
+  private personalDelDia(fecha: string) {
+    const r = this.reglas;
+    const filas = this.personalOrdenado().map(p => this.filaPersonal(p, this.bd.asistenciaPersonal.find(m => m.personalId === p.id && m.fecha === fecha)));
+    const puntuales = filas.filter(f => f.estado === 'puntual').length;
+    const tardanzas = filas.filter(f => f.estado === 'tardanza').length;
+    return {
+      fecha, horaEntrada: r.horaEntrada, minutosTolerancia: r.minutosTolerancia, limitePuntualidad: hora(minutos(r.horaEntrada) + r.minutosTolerancia),
+      resumen: { total: filas.length, puntuales, tardanzas, sinMarcar: filas.length - puntuales - tardanzas, conSalida: filas.filter(f => f.horaSalida).length },
+      filas
+    };
+  }
+
+  private marcacionDe(c: Cuerpo): { fecha: string; hora: string } {
+    const fecha = texto(c['fecha']) || hoy();
+    this.validarFecha(fecha);
+    const indicada = texto(c['hora']).slice(0, 5);
+    if (indicada) {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(indicada)) throw error(400, 'La hora debe tener el formato HH:mm.');
+      if (fecha === hoy() && indicada > horaActual()) throw error(400, 'No se puede marcar una hora futura.');
+      return { fecha, hora: indicada };
+    }
+    if (fecha !== hoy()) throw error(400, 'Indica la hora para corregir la marcación de un día anterior.');
+    return { fecha, hora: horaActual() };
+  }
+
+  private personalPorId(id: number): Personal {
+    const p = this.bd.personal.find(x => x.id === id);
+    if (!p) throw error(404, `No existe personal con id ${id}.`);
+    return p;
+  }
+
+  private marcarEntrada(id: number, c: Cuerpo) {
+    const p = this.personalPorId(id);
+    const { fecha, hora: entrada } = this.marcacionDe(c);
+    let m = this.bd.asistenciaPersonal.find(x => x.personalId === id && x.fecha === fecha);
+    if (m?.horaSalida && entrada >= m.horaSalida) throw error(400, `La entrada debe ser anterior a la salida registrada (${m.horaSalida}).`);
+    const estado = minutos(entrada) > minutos(this.reglas.horaEntrada) + this.reglas.minutosTolerancia ? 'tardanza' : 'puntual';
+    if (!m) {
+      m = { personalId: id, fecha, horaEntrada: entrada, estado };
+      this.bd.asistenciaPersonal.push(m);
+    }
+    m.horaEntrada = entrada;
+    m.estado = estado;
+    if (limpiar(c['observacion'])) m.observacion = limpiar(c['observacion']);
+    return this.filaPersonal(p, m);
+  }
+
+  private marcarSalida(id: number, c: Cuerpo) {
+    const p = this.personalPorId(id);
+    const { fecha, hora: salida } = this.marcacionDe(c);
+    const m = this.bd.asistenciaPersonal.find(x => x.personalId === id && x.fecha === fecha);
+    if (!m) throw error(409, `Registra primero la entrada de ${p.nombres} del ${fecha}.`);
+    if (salida <= m.horaEntrada) throw error(400, `La salida debe ser posterior a la entrada (${m.horaEntrada}).`);
+    m.horaSalida = salida;
+    if (limpiar(c['observacion'])) m.observacion = limpiar(c['observacion']);
+    return this.filaPersonal(p, m);
+  }
+
+  private anularMarcacion(id: number, fecha: string) {
+    const antes = this.bd.asistenciaPersonal.length;
+    this.bd.asistenciaPersonal = this.bd.asistenciaPersonal.filter(m => !(m.personalId === id && m.fecha === fecha));
+    if (this.bd.asistenciaPersonal.length === antes) throw error(404, `No hay marcación de ese personal el ${fecha}.`);
+    return null;
+  }
+
+  private reportePersonal(mes: string) {
+    if (!/^\d{4}-\d{2}$/.test(mes)) throw error(400, 'El mes debe tener el formato AAAA-MM.');
+    const [anio, numero] = mes.split('-').map(Number);
+    const ultimo = new Date(anio, numero, 0).getDate();
+    const habiles = Array.from({ length: ultimo }, (_, i) => `${mes}-${String(i + 1).padStart(2, '0')}`)
+      .filter(f => !finDeSemana(f) && f <= hoy());
+    const filas = this.personalOrdenado().map(p => {
+      const registros = this.bd.asistenciaPersonal.filter(m => m.personalId === p.id && m.fecha.startsWith(mes));
+      return {
+        personalId: p.id, nombreCompleto: `${p.apellidos}, ${p.nombres}`, cargo: p.cargo, diasHabiles: habiles.length,
+        diasAsistidos: registros.length, tardanzas: registros.filter(m => m.estado === 'tardanza').length,
+        minutosTardeAcumulados: registros.reduce((total, m) => total + this.minutosTarde(m), 0),
+        diasSinMarcar: Math.max(0, habiles.length - registros.length),
+        porcentajeAsistencia: habiles.length ? Math.round(registros.length * 100 / habiles.length) : 0
+      };
+    });
+    return { mes, diasHabiles: habiles.length, filas };
+  }
+
+  // =====================================================================
   // Alertas
   // =====================================================================
 
@@ -532,14 +695,14 @@ export class ApiLocal {
         const avisos = this.bd.avisos.filter(a => a.estudianteId === e.id).map(a => a.enviadoEn).sort();
         return {
           estudiante: this.estudianteApi(e), faltas: total, faltaHoy,
-          nivel: total >= CRITICAS ? 'critica' : total >= PREVENTIVAS ? 'preventiva' : 'hoy',
+          nivel: total >= this.reglas.faltasCriticas ? 'critica' : total >= this.reglas.faltasPreventivas ? 'preventiva' : 'hoy',
           ultimoAviso: avisos[avisos.length - 1]
         };
       })
-      .filter(a => a.faltas >= PREVENTIVAS || a.faltaHoy)
+      .filter(a => a.faltas >= this.reglas.faltasPreventivas || a.faltaHoy)
       .sort((a, b) => b.faltas - a.faltas || a.estudiante.nombre.localeCompare(b.estudiante.nombre));
     return {
-      parametros: { ventanaDias: VENTANA, faltasCriticas: CRITICAS, faltasPreventivas: PREVENTIVAS, desde: ventana[0], hasta: dia },
+      parametros: { ventanaDias: VENTANA, faltasCriticas: this.reglas.faltasCriticas, faltasPreventivas: this.reglas.faltasPreventivas, desde: ventana[0], hasta: dia },
       criticas: lista.filter(a => a.nivel === 'critica').length, preventivas: lista.filter(a => a.nivel === 'preventiva').length,
       faltasHoy: lista.filter(a => a.faltaHoy).length, alertas: lista
     };
@@ -721,6 +884,7 @@ export class ApiLocal {
   private guardarSesion(asignacionId: number, fecha: string, c: Cuerpo) {
     const a = this.asignacionPropia(asignacionId);
     this.validarFecha(fecha);
+    this.validarPlazoDocente(fecha);
     const registros = (c['registros'] as { estudianteId: number; estado: EstadoCurso; observacion?: string }[] | undefined) ?? [];
     if (!registros.length) throw error(400, 'Envía la asistencia de al menos un alumno.');
     const delCurso = new Set(this.activos().filter(e => e.seccionId === a.seccionId).map(e => e.id));
@@ -906,8 +1070,10 @@ export class ApiLocal {
   private cargar(): Bd {
     try {
       const guardada = JSON.parse(localStorage.getItem(BD_KEY) ?? 'null') as Bd | null;
-      if (guardada?.version === VERSION) return guardada;
+      if (guardada?.version === VERSION && (guardada.demo ?? false) === this.conDemo) return guardada;
     } catch { /* datos dañados: se vuelven a generar */ }
+    // Datos nuevos: la sesión guardada apuntaba a registros que ya no existen.
+    try { localStorage.removeItem(SESION_KEY); } catch { /* ignorado */ }
     const nueva = this.sembrar();
     this.bd = nueva;
     this.guardar();
@@ -922,7 +1088,10 @@ export class ApiLocal {
     }
   }
 
-  /** Mismos datos que carga el backend (DatosIniciales.java): estructura, cuentas, docentes, 12 alumnos por aula, cursos e historial. */
+  /**
+   * Sin demostración: estructura (aulas) y la cuenta del administrador, como el backend con DATOS_DEMO=false.
+   * Con demostración: además cuentas, docentes, 12 alumnos por aula, cursos e historial.
+   */
   private sembrar(): Bd {
     let siguiente = 1;
     const nuevoId = () => siguiente++;
@@ -945,6 +1114,20 @@ export class ApiLocal {
     const usuario = (nombre: string, correo: string, perfil: Perfil, estado: Usuario['estado'] = 'Activo'): Usuario =>
       ({ id: nuevoId(), nombre, correo: `${correo}@ie20191.edu.pe`, perfil, estado, creado: `${anio}-03-01`, clave: '123456' });
     const admin = usuario('Administrador General', 'admin', 'administrador');
+    const comun = {
+      version: VERSION,
+      demo: this.conDemo,
+      institucion: { nombre: 'I.E. 20191 Alfonso Ugarte', codigoModular: '0285940', direccion: 'San Vicente de Cañete, Lima, Perú', colorPrincipal: '#9b1b1f', colorSecundario: '#fdc425', logo: '', reglas: { ...REGLAS_POR_DEFECTO } },
+      niveles: niveles.map(n => ({ nombre: n.nombre, grados: n.codigos.map(c => ({ codigo: c, etiqueta: etiquetaGrado(n.nombre, c) })) })),
+      secciones,
+      fases: FASES_PROYECTO.map(f => ({ ...f }))
+    };
+    if (!this.conDemo) {
+      return {
+        ...comun, siguienteId: siguiente, usuarios: [admin], docentes: [], estudiantes: [], asignaciones: [], asistencia: {},
+        sesiones: [], justificaciones: [], avisos: [], comunicados: [], personal: [], asistenciaPersonal: []
+      };
+    }
     const cuentas = {
       elena: usuario('Elena Salazar Ríos', 'elena.salazar', 'docente'), luis: usuario('Luis Mendoza Castro', 'luis.mendoza', 'docente'),
       carmen: usuario('Carmen Rojas Villa', 'carmen.rojas', 'docente'), jorge: usuario('Jorge Paredes Lima', 'jorge.paredes', 'docente'),
@@ -1061,21 +1244,28 @@ export class ApiLocal {
       { id: nuevoId(), titulo: 'Justificaciones', contenido: 'Las solicitudes de inasistencia requieren revisión del personal autorizado antes de actualizar el registro.', prioridad: 'Baja', autorId: admin.id, fechaCreacion: haceDias(7) }
     ];
 
+    // Personal: los docentes como personal activo, con entradas y salidas de los días anteriores (mismo cálculo que el backend).
+    const personal: Personal[] = Object.values(d).map(x => ({
+      id: nuevoId(), nombres: x.nombres, apellidos: x.apellidos, dni: x.dni, cargo: 'Docente', area: x.especialidad
+    }));
+    const asistenciaPersonal: MarcacionPersonal[] = [];
+    for (const p of personal) {
+      for (const f of fechas) {
+        const azar = hash(`${p.dni}|personal|${f}`) % 100;
+        if (azar >= 97) continue;
+        const extra = hash(`${p.dni}|${f}|entrada`) % 20;
+        const tarde = azar < 8;
+        asistenciaPersonal.push({
+          personalId: p.id, fecha: f, estado: tarde ? 'tardanza' : 'puntual',
+          horaEntrada: hora(tarde ? 7 * 60 + 56 + extra : 7 * 60 + 25 + extra + azar % 10),
+          horaSalida: hora(13 * 60 + 30 + hash(`${p.dni}|${f}|salida`) % 40)
+        });
+      }
+    }
+
     return {
-      version: VERSION,
+      ...comun,
       siguienteId: siguiente,
-      institucion: { nombre: 'I.E. 20191 Alfonso Ugarte', codigoModular: '0285940', direccion: 'San Vicente de Cañete, Lima, Perú', colorPrincipal: '#9b1b1f', colorSecundario: '#fdc425', logo: '' },
-      niveles: niveles.map(n => ({ nombre: n.nombre, grados: n.codigos.map(c => ({ codigo: c, etiqueta: etiquetaGrado(n.nombre, c) })) })),
-      secciones,
-      fases: [
-        { semana: '01', titulo: 'Exploración', actividad: 'Investigación de la comunicación dispersa y el control manual de asistencia.', producto: 'Ficha de diagnóstico institucional', estado: 'Completada' },
-        { semana: '02', titulo: 'Planeación', actividad: 'Análisis de hallazgos, componentes e infraestructura para orientar la solución.', producto: 'Plan del proyecto', estado: 'Completada' },
-        { semana: '03', titulo: 'Requerimientos', actividad: 'Definición de la matriz transaccional, justificaciones y alertas tempranas.', producto: 'Documento de requerimientos', estado: 'Completada' },
-        { semana: '04', titulo: 'Diseño técnico', actividad: 'Diseño de pantallas y modelado de la base de datos relacional.', producto: 'Prototipo y arquitectura técnica', estado: 'En curso' },
-        { semana: '05–06', titulo: 'Desarrollo parcial', actividad: 'Construcción web e integración de servicios y conexión a datos.', producto: 'Versión parcial del sistema web', estado: 'Pendiente' },
-        { semana: '07', titulo: 'Validación', actividad: 'Pruebas de asistencia, justificaciones y alertas con retroalimentación.', producto: 'Informe de validación', estado: 'Pendiente' },
-        { semana: '08', titulo: 'Presentación final', actividad: 'Demostración del sistema y sustentación de la solución.', producto: 'Presentación final', estado: 'Pendiente' }
-      ],
       usuarios: [admin, ...Object.values(cuentas)],
       docentes: Object.values(d),
       estudiantes,
@@ -1084,7 +1274,9 @@ export class ApiLocal {
       sesiones,
       justificaciones,
       avisos: [],
-      comunicados
+      comunicados,
+      personal,
+      asistenciaPersonal
     };
   }
 }

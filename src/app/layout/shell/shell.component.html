@@ -36,7 +36,9 @@
         <app-icono nombre="salir" [tamano]="20" />
         <span>Cerrar sesión</span>
       </button>
-      <a class="quick-action" [routerLink]="accionRapida.ruta"><app-icono nombre="mas" [tamano]="18" /> {{ accionRapida.etiqueta }}</a>
+      @if (accionRapida; as accion) {
+        <a class="quick-action" [routerLink]="accion.ruta"><app-icono nombre="mas" [tamano]="18" /> {{ accion.etiqueta }}</a>
+      }
     </div>
   </aside>
 

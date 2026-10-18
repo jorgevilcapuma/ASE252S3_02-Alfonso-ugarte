@@ -9,7 +9,6 @@ describe('JustificacionesComponent', () => {
   let fixture: ComponentFixture<JustificacionesComponent>;
 
   beforeEach(async () => {
-    localStorage.setItem('ugartino-modo', 'local');
     await TestBed.configureTestingModule({
       imports: [JustificacionesComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]

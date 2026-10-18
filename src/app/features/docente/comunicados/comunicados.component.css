@@ -193,3 +193,4 @@
 .comunicado-meta app-icono { color: var(--color-primary); }
 .eliminar { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 10px; border: 1px solid var(--color-line); border-radius: 8px; color: var(--color-danger); background: #fff; font-size: 12.5px; font-weight: 600; }
 .eliminar:hover { border-color: #f2c4c4; background: var(--color-danger-soft); }
+.server-note { margin-top: 6px; color: var(--color-warning); font-size: 13px; }

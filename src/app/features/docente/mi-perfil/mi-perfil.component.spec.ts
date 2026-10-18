@@ -9,7 +9,6 @@ describe('MiPerfilComponent', () => {
   let fixture: ComponentFixture<MiPerfilComponent>;
 
   beforeEach(async () => {
-    localStorage.setItem('ugartino-modo', 'local');
     await TestBed.configureTestingModule({
       imports: [MiPerfilComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]

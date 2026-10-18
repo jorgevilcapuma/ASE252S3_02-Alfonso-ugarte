@@ -3,6 +3,7 @@
     <span class="eyebrow">AULAS Y COMUNICACIÓN</span>
     <h1>Anuncios y Comunicados</h1>
     <p>Publica avisos e información importante para tus alumnos y sus apoderados.</p>
+    @if (!modo.esLocal) { <p class="server-note">El backend no tiene tabla de comunicados: se guardan en este navegador y los ven los alumnos que ingresen desde este mismo equipo.</p> }
   </div>
 </div>
 

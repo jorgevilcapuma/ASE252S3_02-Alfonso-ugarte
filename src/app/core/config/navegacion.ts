@@ -20,8 +20,12 @@ export const NAVEGACION: EnlaceNavegacion[] = [
   { perfil: 'administrador', grupo: 'Principal', ruta: '/administrador/asistencia', etiqueta: 'Vista detallada y matriz', icono: 'matriz' },
   { perfil: 'administrador', grupo: 'Principal', ruta: '/administrador/alertas', etiqueta: 'Reportes de alertas', icono: 'reporte', alerta: true },
   { perfil: 'administrador', grupo: 'Principal', ruta: '/administrador/justificaciones', etiqueta: 'Justificaciones', icono: 'justificacion' },
+  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/docentes', etiqueta: 'Docentes y personal', icono: 'perfil' },
+  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/estudiantes', etiqueta: 'Estudiantes', icono: 'alumnos' },
+  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/cursos', etiqueta: 'Cursos', icono: 'cursos' },
+  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/grados-secciones', etiqueta: 'Grados y secciones', icono: 'estructura' },
   { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/usuarios', etiqueta: 'Usuarios', icono: 'usuarios' },
-  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/matriculas', etiqueta: 'Matrículas', icono: 'matricula' },
+  { perfil: 'administrador', grupo: 'Gestión', ruta: '/administrador/asistencia-personal', etiqueta: 'Asistencia del personal', icono: 'reloj' },
   { perfil: 'administrador', grupo: 'Sistema', ruta: '/administrador/fases', etiqueta: 'Fases del proyecto', icono: 'fases' },
   { perfil: 'administrador', grupo: 'Sistema', ruta: '/administrador/configuracion', etiqueta: 'Configuración y administración', icono: 'ajustes', pie: true },
   // Docente
@@ -49,8 +53,7 @@ export const NAVEGACION: EnlaceNavegacion[] = [
 ];
 
 /** Acción rápida del botón al pie del menú lateral, según el perfil. */
-export const ACCION_RAPIDA: Record<PerfilAcceso, { ruta: string; etiqueta: string }> = {
-  administrador: { ruta: '/administrador/secciones', etiqueta: 'Nuevo registro' },
+export const ACCION_RAPIDA: Partial<Record<PerfilAcceso, { ruta: string; etiqueta: string }>> = {
   docente: { ruta: '/docente/registrar-asistencia', etiqueta: 'Tomar asistencia' },
   alumno: { ruta: '/alumno/justificaciones', etiqueta: 'Nueva justificación' }
 };

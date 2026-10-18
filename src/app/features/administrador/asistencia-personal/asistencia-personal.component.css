@@ -1,0 +1,17 @@
+:host { display: grid; gap: 22px; }
+.toolbar-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-controls .search-box { width: 220px; }
+.filter-control input { height: 40px; padding: 0 10px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); font: inherit; }
+.time { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--color-ink); }
+.block { display: block; }
+.form-grid .wide { grid-column: 1 / -1; }
+
+.percent { display: flex; align-items: center; gap: 10px; min-width: 140px; }
+.percent-track { flex: 1; height: 8px; overflow: hidden; border-radius: 99px; background: var(--color-line-soft); }
+.percent-track i { display: block; height: 100%; border-radius: inherit; background: var(--color-success); }
+.percent-track i.is-low { background: var(--color-warning); }
+.percent b { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .toolbar-controls, .toolbar-controls .search-box { width: 100%; }
+}

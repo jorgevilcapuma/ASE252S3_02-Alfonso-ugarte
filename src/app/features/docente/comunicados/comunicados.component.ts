@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComunicadoDocente, DocenteService } from '../docente.service';
 import { IconoComponent } from '../../../shared/components/icono/icono.component';
+import { ModoDatosService } from '../../../core/services/modo-datos.service';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { NotificacionService } from '../../../core/services/notificacion.service
 export class ComunicadosComponent {
   readonly docenteService = inject(DocenteService);
   private readonly notificaciones = inject(NotificacionService);
+  readonly modo = inject(ModoDatosService);
 
   porEliminar: ComunicadoDocente | null = null;
   titulo = '';

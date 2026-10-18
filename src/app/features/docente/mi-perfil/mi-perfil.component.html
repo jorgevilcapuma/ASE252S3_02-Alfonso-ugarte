@@ -39,7 +39,9 @@
     <!-- FORMULARIO DE EDICIÓN -->
     <div class="card card-form">
       <h3>Información Personal y Contacto</h3>
+      @if (!modo.esLocal) { <p class="server-note">Tu ficha la actualiza el administrador en <strong>Docentes y personal</strong>. Aquí puedes consultarla.</p> }
       <form (ngSubmit)="guardarCambios()" #formPerfil="ngForm">
+        <fieldset class="perfil-campos" [disabled]="!modo.esLocal">
         <div class="form-row">
           <div class="form-group">
             <label>Nombres</label>
@@ -82,6 +84,7 @@
         <div class="form-actions">
           <button type="submit" class="btn-primary">Guardar Cambios</button>
         </div>
+        </fieldset>
       </form>
     </div>
   </div>

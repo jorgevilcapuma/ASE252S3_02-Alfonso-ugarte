@@ -1,0 +1,9 @@
+:host { display: grid; gap: 20px; }
+.toolbar-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-controls .search-box { width: 240px; }
+.toolbar-controls .search-box input { min-height: 40px; border-radius: 999px; }
+tr.is-inactive td { opacity: .62; }
+.block { display: block; }
+.form-grid .wide { grid-column: 1 / -1; }
+.modal { width: min(100%, 640px); }
+@media (max-width: 640px) { .toolbar-controls, .toolbar-controls .search-box { width: 100%; } }

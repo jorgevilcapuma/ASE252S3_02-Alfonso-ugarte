@@ -27,12 +27,21 @@ describe('ApiLocal (modo sin servidor)', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    api = new ApiLocal();
+    api = new ApiLocal(true);
   });
 
   afterEach(() => localStorage.clear());
 
-  it('siembra los mismos datos que el backend', async () => {
+  it('por defecto empieza sin registros: solo el administrador y las aulas', async () => {
+    localStorage.clear();
+    api = new ApiLocal(false);
+    await ingresar({ perfil: 'administrador', correo: 'admin@ie20191.edu.pe', contrasena: '123456' });
+    expect((await api.atender('GET', '/matriculas') as { contenido: unknown[] }).contenido.length).toBe(0);
+    expect((await api.atender('GET', '/usuarios') as unknown[]).length).toBe(1);
+    expect((await api.atender('GET', '/estructura') as { grados: unknown[] }[]).map(n => n.grados.length)).toEqual([3, 6, 5]);
+  });
+
+  it('con demostración siembra los mismos datos que el backend', async () => {
     await ingresar({ perfil: 'administrador', correo: 'admin@ie20191.edu.pe', contrasena: '123456' });
     const matriculas = await api.atender('GET', '/matriculas') as { contenido: unknown[] };
     const estructura = await api.atender('GET', '/estructura') as { grados: unknown[] }[];
@@ -57,7 +66,7 @@ describe('ApiLocal (modo sin servidor)', () => {
     expect(nuevo['apellidos']).toBe('Torres Vega');
     await expectAsync(api.atender('POST', '/matriculas', {}, { nombre: 'Ana Lucía Torres Vega', dni: '76543210', nivel: 'Primaria', grado: '2', seccion: 'B' }))
       .toBeRejectedWithError('Ya existe un estudiante matriculado con ese DNI.');
-    const recargada = new ApiLocal();   // como recargar la página
+    const recargada = new ApiLocal(true);   // como recargar la página
     const lista = await recargada.atender('GET', '/matriculas') as { contenido: { dni: string }[] };
     expect(lista.contenido.some(e => e.dni === '76543210')).toBeTrue();
   });

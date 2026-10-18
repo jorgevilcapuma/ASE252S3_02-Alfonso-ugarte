@@ -10,20 +10,23 @@ npm start          # http://localhost:4200
 npm run build      # build de producción
 ```
 
-El portal funciona de **dos maneras** (se elige en la pantalla de ingreso, "Origen de los datos"):
+El portal trabaja con el **backend** (modo servidor). El modo local existe solo para mostrar el portal sin servidor y se
+activa en `src/app/core/config/api.ts` (`MODO_DATOS`); la pantalla de ingreso ya no ofrece elegirlo.
 
 | Modo | Qué necesita | Dónde quedan los datos |
 |---|---|---|
 | **Servidor (API)** | El backend **ASE252S3_BE** en http://localhost:8080 | Base de datos del backend (SQL Server, o H2 con el perfil `local`) |
 | **Local (sin servidor)** | Nada más que `npm start` | En este navegador (`localStorage`) |
 
-- Al abrir el portal sin un modo elegido, se usa el servidor si responde y, si no, el **modo local** automáticamente.
+- Las pantallas usan un mismo conjunto de rutas. En modo servidor, `src/app/core/servidor/api-servidor.ts` las traduce
+  a la API del backend (8 tablas). Lo que el backend no guarda se resuelve ahí: las alertas, el historial del docente y
+  el portal del alumno se calculan con la asistencia del backend; el nombre, los colores y el logotipo del colegio,
+  los umbrales de alertas, los comunicados y los avisos a familias se guardan en el navegador.
 - El modo local atiende las mismas rutas que la API (`src/app/core/local/api-local.ts`) con los mismos datos de
   demostración y las mismas reglas (DNI y correos únicos, fechas válidas, justificaciones, alertas, permisos por perfil).
-  "Reiniciar datos de demostración" en el login vuelve al estado inicial.
 - Para levantar el backend: `docker compose up -d --build` (SQL Server) o `mvn spring-boot:run "-Dspring-boot.run.profiles=local"`
   (sin Docker) en `../ASE252S3_BE`.
-- La dirección de la API y el modo por defecto (`auto`, `servidor` o `local`) están en `src/app/core/config/api.ts`.
+- La dirección de la API y el modo (`servidor`, `local` o `auto`) están en `src/app/core/config/api.ts`.
 
 Cuentas de demostración (contraseña **123456**), que se completan al elegir el perfil en el login:
 `admin@ie20191.edu.pe`, `elena.salazar@ie20191.edu.pe` (docente) y el alumno **Juan Pérez Ugarte** · DNI **72819201**.
@@ -50,7 +53,9 @@ src/
    │  ├─ guards/perfil.guard.ts
    │  ├─ models/               # tipos compartidos
    │  ├─ interceptors/         # envía el token de la sesión a la API
+   │  ├─ config/proyecto.ts    # fases del plan de 8 semanas
    │  ├─ local/                # API simulada del modo local (sin servidor)
+   │  ├─ servidor/             # adaptador del modo servidor: rutas de las pantallas → API del backend
    │  └─ services/             # api (HTTP), auth, asistencia, usuarios, tema (colores/logo), notificaciones
    ├─ layout/shell/            # sidebar + topbar + footer
    ├─ shared/components/       # icono (SVG), pantalla-carga (splash / autenticando), toast-host, modulo-en-desarrollo
@@ -63,7 +68,8 @@ src/
       ├─ alertas                # tendencia 7 días, alertas críticas/preventivas, avisos a familias
       ├─ configuracion          # datos del colegio, usuarios, estructura, identidad visual
       ├─ proyecto/fases
-      ├─ administrador/        # rutas del perfil (lazy)
+      ├─ administrador/        # rutas del perfil (lazy), asistencia del personal y
+      │                        #   gestion/ (CRUD de docentes, estudiantes, cursos y grados/secciones; solo modo servidor)
       ├─ docente/              # rutas + pantallas del perfil docente
       └─ alumno/               # rutas + pantallas del perfil alumno (incl. mi-asistencia)
 ```

@@ -9,7 +9,6 @@ describe('RegistrarAsistenciaComponent', () => {
   let fixture: ComponentFixture<RegistrarAsistenciaComponent>;
 
   beforeEach(async () => {
-    localStorage.setItem('ugartino-modo', 'local');
     await TestBed.configureTestingModule({
       imports: [RegistrarAsistenciaComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]

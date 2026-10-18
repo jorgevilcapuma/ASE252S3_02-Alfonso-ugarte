@@ -1,0 +1,161 @@
+<div class="page-intro">
+  <div>
+    <span class="eyebrow">CONTROL DEL PERSONAL</span>
+    <h1>Asistencia del personal</h1>
+    <p>Entrada y salida de docentes y administrativos, separada de la asistencia de los estudiantes.</p>
+  </div>
+  <div class="page-actions">
+    <div class="chip-filter" role="group" aria-label="Vista">
+      <button type="button" [class.is-active]="vista === 'dia'" (click)="cambiarVista('dia')">Marcaciones del día</button>
+      <button type="button" [class.is-active]="vista === 'reporte'" (click)="cambiarVista('reporte')">Reporte mensual</button>
+    </div>
+    <button class="button button-outline" type="button" (click)="exportar()"><app-icono nombre="descargar" [tamano]="18" /> CSV</button>
+  </div>
+</div>
+
+@if (vista === 'dia') {
+  @if (dia; as d) {
+    <div class="metric-grid">
+      <article class="metric-card is-featured">
+        <div class="metric-top"><span>Marcaron entrada</span><span class="metric-icon"><app-icono nombre="check" [tamano]="18" /></span></div>
+        <strong>{{ d.resumen.puntuales + d.resumen.tardanzas }}<small> / {{ d.resumen.total }}</small></strong>
+        <p>{{ d.resumen.conSalida }} ya registraron su salida</p>
+      </article>
+      <article class="metric-card">
+        <div class="metric-top"><span>Puntuales</span><span class="metric-icon icon-green"><app-icono nombre="reloj" [tamano]="18" /></span></div>
+        <strong>{{ d.resumen.puntuales }}</strong>
+        <p>Hasta las {{ d.limitePuntualidad }}</p>
+      </article>
+      <article class="metric-card">
+        <div class="metric-top"><span>Tardanzas</span><span class="metric-icon icon-gold"><app-icono nombre="alerta" [tamano]="18" /></span></div>
+        <strong>{{ d.resumen.tardanzas }}</strong>
+        <p>Entrada {{ d.horaEntrada }} + {{ d.minutosTolerancia }} min de tolerancia</p>
+      </article>
+      <article class="metric-card">
+        <div class="metric-top"><span>Sin marcar</span><span class="metric-icon icon-red"><app-icono nombre="perfil" [tamano]="18" /></span></div>
+        <strong>{{ d.resumen.sinMarcar }}</strong>
+        <p>{{ esHoy ? 'Aún no registran su entrada' : 'No registraron entrada ese día' }}</p>
+      </article>
+    </div>
+  }
+
+  <section class="panel table-panel">
+    <div class="table-toolbar">
+      <div>
+        <h3>Marcaciones del {{ fecha | date:"EEEE d 'de' MMMM":'':'es-PE' }}</h3>
+        <p>{{ esFinDeSemana ? 'Fin de semana: no hay jornada que registrar. Elige un día hábil.' : esHoy ? 'Los botones registran la hora actual. Usa el lápiz para corregir una hora.' : 'Día anterior: indica las horas con el lápiz.' }}</p>
+      </div>
+      <div class="toolbar-controls">
+        <label class="filter-control"><span class="sr-only">Fecha</span>
+          <input type="date" [(ngModel)]="fecha" [max]="hoy" (change)="cargarDia()">
+        </label>
+        @if (!esHoy) { <button type="button" class="button button-quiet button-sm" (click)="fecha = hoy; cargarDia()">Hoy</button> }
+        <label class="search-box"><span class="sr-only">Buscar personal</span><app-icono nombre="buscar" [tamano]="18" /><input type="search" [(ngModel)]="busqueda" placeholder="Buscar personal…"></label>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Personal</th><th>Cargo / área</th><th>Entrada</th><th>Salida</th><th>Estado</th><th class="num">Acción</th></tr></thead>
+        <tbody>
+          @for (fila of filas; track fila.personalId) {
+            <tr>
+              <td><div class="student-cell"><div class="avatar student-avatar" [class.avatar-gold]="fila.estado === 'tardanza'">{{ iniciales(fila.nombreCompleto) }}</div><div><strong>{{ fila.nombreCompleto }}</strong><small>DNI {{ fila.dni }}</small></div></div></td>
+              <td>{{ fila.cargo }}@if (fila.area) { <small class="muted block">{{ fila.area }}</small> }</td>
+              <td class="time">{{ fila.horaEntrada ?? '—' }}</td>
+              <td class="time">{{ fila.horaSalida ?? '—' }}</td>
+              <td>
+                @switch (fila.estado) {
+                  @case ('puntual') { <span class="badge badge-success">Puntual</span> }
+                  @case ('tardanza') { <span class="badge badge-warning">Tardanza · {{ fila.minutosTarde }} min</span> }
+                  @default { <span class="badge badge-neutral">Sin marcar</span> }
+                }
+                @if (fila.observacion) { <small class="muted block">{{ fila.observacion }}</small> }
+              </td>
+              <td class="num">
+                <div class="row-buttons">
+                  @if (marcable && fila.estado === 'sin-marcar') {
+                    <button type="button" class="button button-primary button-sm" [disabled]="ocupado" (click)="marcar(fila, 'entrada')">Entrada</button>
+                  }
+                  @if (marcable && fila.estado !== 'sin-marcar' && !fila.horaSalida) {
+                    <button type="button" class="button button-outline button-sm" [disabled]="ocupado" (click)="marcar(fila, 'salida')">Salida</button>
+                  }
+                  @if (!esFinDeSemana) { <button type="button" class="icon-button" title="Corregir horas" (click)="editar(fila)"><app-icono nombre="editar" [tamano]="17" /></button> }
+                  @if (fila.estado !== 'sin-marcar') {
+                    <button type="button" class="icon-button" title="Anular marcación" [disabled]="ocupado" (click)="anular(fila)"><app-icono nombre="papelera" [tamano]="17" /></button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-state">{{ cargando ? 'Cargando…' : 'No hay personal activo con estos filtros. Regístralo en la tabla maestra del personal.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else {
+  <section class="panel table-panel">
+    <div class="table-toolbar">
+      <div>
+        <h3>Reporte mensual del personal</h3>
+        <p>{{ reporte?.diasHabiles ?? 0 }} días hábiles transcurridos en el mes · porcentaje = días con entrada / días hábiles.</p>
+      </div>
+      <div class="toolbar-controls">
+        <label class="filter-control"><span class="sr-only">Mes</span>
+          <input type="month" [(ngModel)]="mes" [max]="hoy.slice(0, 7)" (change)="cargarReporte()">
+        </label>
+        <label class="search-box"><span class="sr-only">Buscar personal</span><app-icono nombre="buscar" [tamano]="18" /><input type="search" [(ngModel)]="busqueda" placeholder="Buscar personal…"></label>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Personal</th><th>Cargo</th><th class="num">Días asistidos</th><th>Asistencia</th><th class="num">Tardanzas</th><th class="num">Min. tarde</th><th class="num">Sin marcar</th></tr></thead>
+        <tbody>
+          @for (fila of filasReporte; track fila.personalId) {
+            <tr>
+              <td><div class="student-cell"><div class="avatar student-avatar">{{ iniciales(fila.nombreCompleto) }}</div><div><strong>{{ fila.nombreCompleto }}</strong></div></div></td>
+              <td>{{ fila.cargo }}</td>
+              <td class="num">{{ fila.diasAsistidos }} / {{ fila.diasHabiles }}</td>
+              <td>
+                <div class="percent">
+                  <span class="percent-track"><i [style.width.%]="fila.porcentajeAsistencia" [class.is-low]="fila.porcentajeAsistencia < 90"></i></span>
+                  <b>{{ fila.porcentajeAsistencia }}%</b>
+                </div>
+              </td>
+              <td class="num">{{ fila.tardanzas }}</td>
+              <td class="num">{{ fila.minutosTardeAcumulados }}</td>
+              <td class="num">{{ fila.diasSinMarcar }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty-state">{{ cargando ? 'Cargando…' : 'Sin personal activo para el reporte.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+<div class="notice-box">
+  <div class="notice-icon"><app-icono nombre="info" [tamano]="18" /></div>
+  <div><strong>Reglas aplicadas</strong><p>La hora de entrada y la tolerancia se configuran en Configuración → Reglas de asistencia. Cada persona tiene una sola marcación por día.</p></div>
+</div>
+
+@if (edicion; as e) {
+  <div class="modal-backdrop" (click)="edicion = null">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="edicion-titulo" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">{{ fecha | date:"d 'de' MMMM":'':'es-PE' }}</span><h2 id="edicion-titulo">{{ e.fila.nombreCompleto }}</h2></div>
+        <button type="button" class="modal-close" aria-label="Cerrar" (click)="edicion = null">×</button>
+      </div>
+      <div class="form-grid">
+        <label class="field">Hora de entrada <input type="time" [(ngModel)]="e.entrada"></label>
+        <label class="field">Hora de salida <input type="time" [(ngModel)]="e.salida"></label>
+        <label class="field wide">Observación (opcional) <input type="text" maxlength="200" [(ngModel)]="e.observacion" placeholder="Ej.: comisión de servicio, permiso de salud…"></label>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="edicion = null">Cancelar</button>
+        <button class="button button-primary" type="button" [disabled]="ocupado" (click)="guardarEdicion()">Guardar marcación</button>
+      </div>
+    </section>
+  </div>
+}

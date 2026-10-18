@@ -1,0 +1,127 @@
+<div class="page-intro">
+  <div>
+    <span class="eyebrow">TABLAS MAESTRAS</span>
+    <h1>{{ config.titulo }}</h1>
+    <p>{{ config.descripcion }}</p>
+  </div>
+  @if (!modo.esLocal) {
+    <button class="button button-primary" type="button" (click)="abrir()"><app-icono nombre="mas" [tamano]="18" /> {{ config.nuevo }}</button>
+  }
+</div>
+
+@if (modo.esLocal) {
+  <div class="notice-box">
+    <div class="notice-icon"><app-icono nombre="info" [tamano]="18" /></div>
+    <div><strong>Disponible con el servidor</strong><p>La gestión de {{ config.titulo.toLowerCase() }} trabaja directamente sobre la base de datos del backend. Elige "Servidor (API)" en la pantalla de ingreso.</p></div>
+  </div>
+} @else {
+  <section class="panel table-panel">
+    <div class="table-toolbar">
+      <div><h3>{{ config.titulo }}</h3><p>{{ cargando() ? 'Cargando…' : filtrados().length + ' de ' + registros().length + ' registros' }}</p></div>
+      <div class="toolbar-controls">
+        <label class="search-box">
+          <span class="sr-only">Buscar</span>
+          <app-icono nombre="buscar" [tamano]="18" />
+          <input type="search" placeholder="Buscar…" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+        </label>
+        <div class="chip-filter" role="group" aria-label="Filtrar por estado">
+          <button type="button" [class.is-active]="estado() === 'A'" (click)="filtrarEstado('A')">Activos</button>
+          <button type="button" [class.is-active]="estado() === 'I'" (click)="filtrarEstado('I')">Inactivos</button>
+          <button type="button" [class.is-active]="estado() === 'T'" (click)="filtrarEstado('T')">Todos</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            @for (columna of config.columnas; track columna.etiqueta) { <th>{{ columna.etiqueta }}</th> }
+            <th>ESTADO</th><th class="num">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registro of filtrados(); track registro.id) {
+            <tr [class.is-inactive]="registro.estado !== 'A'">
+              @for (columna of config.columnas; track columna.etiqueta; let primera = $first) {
+                <td>
+                  @if (primera) {
+                    <div class="student-cell">
+                      <div class="avatar avatar-soft">{{ iniciales(columna.principal(registro)) }}</div>
+                      <div><strong>{{ columna.principal(registro) }}</strong>@if (columna.secundario) { <small>{{ columna.secundario(registro) }}</small> }</div>
+                    </div>
+                  } @else {
+                    {{ columna.principal(registro) }}
+                    @if (columna.secundario && columna.secundario(registro)) { <small class="muted block">{{ columna.secundario(registro) }}</small> }
+                  }
+                </td>
+              }
+              <td>
+                @if (registro.estado === 'A') { <span class="badge badge-success">Activo</span> }
+                @else { <span class="badge badge-neutral">Inactivo</span> }
+              </td>
+              <td class="num">
+                <div class="row-buttons">
+                  @if (registro.estado === 'A') {
+                    <button type="button" class="icon-button" title="Editar" [attr.aria-label]="'Editar ' + nombre(registro)" (click)="abrir(registro)"><app-icono nombre="editar" [tamano]="17" /></button>
+                    <button type="button" class="icon-button is-danger" title="Eliminar (lógico)" [attr.aria-label]="'Eliminar ' + nombre(registro)" (click)="porEliminar = registro"><app-icono nombre="papelera" [tamano]="17" /></button>
+                  } @else {
+                    <button type="button" class="button button-outline button-sm" (click)="cambiarEstado(registro, 'restaurar')">Restaurar</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="config.columnas.length + 2" class="empty-state">{{ cargando() ? 'Cargando…' : 'No hay registros con estos filtros.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+@if (formulario; as f) {
+  <div class="modal-backdrop" (click)="formulario = null">
+    <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">{{ editandoId ? 'EDITAR' : 'NUEVO REGISTRO' }}</span><h2>{{ editandoId ? 'Editar ' : 'Registrar ' }}{{ config.singular }}</h2></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="formulario = null">×</button>
+      </div>
+      <div class="form-grid">
+        @for (campo of config.campos; track campo.clave) {
+          <label class="field" [class.wide]="campo.ancho">{{ campo.etiqueta }}{{ campo.requerido ? ' *' : '' }}
+            @switch (campo.tipo) {
+              @case ('select') {
+                <select [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]">
+                  @for (opcion of opcionesDe(campo); track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
+                </select>
+              }
+              @case ('fecha') { <input type="date" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]"> }
+              @case ('email') { <input type="email" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" [attr.maxlength]="campo.maximo"> }
+              @default { <input type="text" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" [attr.maxlength]="campo.maximo"> }
+            }
+            @if (campo.ayuda) { <small class="field-hint">{{ campo.ayuda }}</small> }
+          </label>
+        }
+      </div>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="formulario = null">Cancelar</button>
+        <button class="button button-primary" type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (porEliminar; as r) {
+  <div class="modal-backdrop" (click)="porEliminar = null">
+    <section class="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="eliminar-titulo" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><app-icono nombre="papelera" [tamano]="26" /></div>
+      <h2 id="eliminar-titulo">¿Eliminar {{ nombre(r) }}?</h2>
+      <p class="modal-description">Es una eliminación lógica: el registro queda inactivo, se conserva su historial y se puede restaurar.</p>
+      <div class="modal-actions">
+        <button class="button button-outline" type="button" (click)="porEliminar = null">Cancelar</button>
+        <button class="button button-danger" type="button" (click)="cambiarEstado(r, 'eliminar')">Eliminar</button>
+      </div>
+    </section>
+  </div>
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { AsistenciaService } from '../../../core/services/asistencia.service';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 import { DocenteService, RegistroAlumnoCurso } from '../docente.service';
 
@@ -26,6 +27,7 @@ export class RegistrarAsistenciaComponent {
   private readonly route = inject(ActivatedRoute);
   readonly docenteService = inject(DocenteService);
   private readonly notificaciones = inject(NotificacionService);
+  readonly data = inject(AsistenciaService);
 
   cursoId = '';
   fecha = this.docenteService.hoy;

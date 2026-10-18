@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_URL } from '../config/api';
 import { ApiLocal } from '../local/api-local';
+import { ApiServidor } from '../servidor/api-servidor';
 import { ErrorApi } from './error-api';
 import { ModoDatosService } from './modo-datos.service';
 
@@ -20,6 +21,7 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly modo = inject(ModoDatosService);
   private local: ApiLocal | null = null;
+  private servidor: ApiServidor | null = null;
 
   get<T>(ruta: string, parametros?: Parametros): Promise<T> {
     return this.solicitar('GET', ruta, undefined, parametros);
@@ -57,13 +59,20 @@ export class ApiService {
     return this.modo.resolver().then(() => this.enviar<T>(metodo, ruta, cuerpo, parametros));
   }
 
+  /**
+   * Las pantallas usan un mismo conjunto de rutas: en modo local las atiende la API simulada del navegador y en modo
+   * servidor el adaptador las traduce a la API del backend.
+   */
   private enviar<T>(metodo: Metodo, ruta: string, cuerpo?: unknown, parametros?: Parametros): Promise<T> {
-    if (this.modo.esLocal) {
-      const params = Object.fromEntries(Object.entries(parametros ?? {})
-        .filter(([, valor]) => valor !== null && valor !== undefined && valor !== '')
-        .map(([clave, valor]) => [clave, String(valor)]));
-      return this.apiLocal().atender(metodo, ruta, params, (cuerpo ?? {}) as Record<string, unknown>) as Promise<T>;
-    }
+    const params = Object.fromEntries(Object.entries(parametros ?? {})
+      .filter(([, valor]) => valor !== null && valor !== undefined && valor !== '')
+      .map(([clave, valor]) => [clave, String(valor)]));
+    const destino = this.modo.esLocal ? this.apiLocal() : this.apiServidor();
+    return destino.atender(metodo, ruta, params, (cuerpo ?? {}) as Record<string, unknown>) as Promise<T>;
+  }
+
+  /** Petición HTTP directa al backend (la usa el adaptador del modo servidor). */
+  private backend<T>(metodo: Metodo, ruta: string, parametros?: Parametros, cuerpo?: unknown): Promise<T> {
     const url = API_URL + ruta;
     const peticion = metodo === 'GET' ? this.http.get<T>(url, { params: this.params(parametros) })
       : metodo === 'POST' ? this.http.post<T>(url, cuerpo)
@@ -78,6 +87,11 @@ export class ApiService {
     return this.local;
   }
 
+  private apiServidor(): ApiServidor {
+    this.servidor ??= new ApiServidor((metodo, ruta, parametros, cuerpo) => this.backend(metodo, ruta, parametros, cuerpo));
+    return this.servidor;
+  }
+
   private async ejecutar<T>(peticion: ReturnType<HttpClient['get']>): Promise<T> {
     try {
       return await firstValueFrom(peticion) as T;
@@ -89,7 +103,7 @@ export class ApiService {
   private convertir(error: unknown): ErrorApi {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) {
-        return new ErrorApi(0, 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución o cambia al modo local en la pantalla de ingreso.');
+        return new ErrorApi(0, 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución (http://localhost:8080) e intenta de nuevo.');
       }
       const cuerpo = error.error as { mensaje?: string; errores?: string[] } | null;
       const errores = cuerpo?.errores ?? [];

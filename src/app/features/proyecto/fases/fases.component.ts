@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { IconoComponent } from '../../../shared/components/icono/icono.component';
 import { AsistenciaService } from '../../../core/services/asistencia.service';
+import { ModoDatosService } from '../../../core/services/modo-datos.service';
 
 @Component({
   selector: 'app-fases',
@@ -12,6 +13,7 @@ import { AsistenciaService } from '../../../core/services/asistencia.service';
 })
 export class FasesComponent {
   private readonly data = inject(AsistenciaService);
+  readonly modo = inject(ModoDatosService);
 
   /** Fases registradas en la base de datos (tabla fase_proyecto). */
   get fases() { return this.data.fases; }

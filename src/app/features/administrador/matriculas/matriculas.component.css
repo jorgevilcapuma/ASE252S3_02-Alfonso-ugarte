@@ -1,8 +1,0 @@
-.level-card { cursor: pointer; }
-.level-card .metric-icon { font-family: var(--font-display); font-weight: 800; }
-.matriculas-filters { margin-top: 20px; grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr)); }
-.form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 760px) {
-  .matriculas-filters { grid-template-columns: 1fr 1fr; }
-  .form-grid.three { grid-template-columns: 1fr; }
-}
