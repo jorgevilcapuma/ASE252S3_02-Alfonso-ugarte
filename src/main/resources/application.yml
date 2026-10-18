@@ -34,6 +34,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    persist-authorization: true   # el token de "Authorize" se conserva al recargar la página
 
 app:
   zona-horaria: ${ZONA_HORARIA:America/Lima}           # define el "hoy" de la asistencia aunque el servidor esté en UTC
@@ -42,10 +43,10 @@ app:
     secreto: ${TOKEN_SECRETO:cambia-este-secreto-en-produccion-ugartino-2026}
     horas-sesion: ${HORAS_SESION:10}
     contrasena-inicial: ${CONTRASENA_INICIAL:123456}  # para cuentas creadas sin contraseña
-  alertas:
-    ventana-dias: 20        # días hábiles en los que se acumulan faltas
-    faltas-criticas: 3
-    faltas-preventivas: 2
+  asistencia:
+    hora-entrada: ${HORA_ENTRADA:07:45}              # hora oficial de ingreso del personal
+    minutos-tolerancia: ${MINUTOS_TOLERANCIA:10}     # después de entrada + tolerancia es tardanza
+    dias-edicion-docente: ${DIAS_EDICION_DOCENTE:5}  # días hábiles atrás que un docente puede corregir
   datos-demo:
-    habilitado: ${DATOS_DEMO:true}   # carga catálogos y datos de ejemplo si la base está vacía
+    habilitado: ${DATOS_DEMO:false}  # true: carga docentes, estudiantes, cursos e historial de ejemplo si no hay docentes
     dias-historial: ${DIAS_HISTORIAL:22}

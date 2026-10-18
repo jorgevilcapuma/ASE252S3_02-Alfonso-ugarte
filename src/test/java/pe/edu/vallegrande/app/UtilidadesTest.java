@@ -6,9 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,17 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import pe.edu.vallegrande.app.config.PropiedadesApp;
-import pe.edu.vallegrande.app.dto.response.AsignacionResponse;
 import pe.edu.vallegrande.app.exception.ApiException;
-import pe.edu.vallegrande.app.model.Asignacion;
 import pe.edu.vallegrande.app.model.Curso;
-import pe.edu.vallegrande.app.model.Docente;
-import pe.edu.vallegrande.app.model.Grado;
-import pe.edu.vallegrande.app.model.Horario;
-import pe.edu.vallegrande.app.model.NivelEducativo;
-import pe.edu.vallegrande.app.model.Seccion;
-import pe.edu.vallegrande.app.model.enums.DiaSemana;
+import pe.edu.vallegrande.app.model.GradoSeccion;
 import pe.edu.vallegrande.app.model.enums.EstadoAsistencia;
+import pe.edu.vallegrande.app.model.enums.Nivel;
 import pe.edu.vallegrande.app.model.enums.Perfil;
 import pe.edu.vallegrande.app.model.enums.Turno;
 import pe.edu.vallegrande.app.seguridad.HasherContrasena;
@@ -51,7 +43,7 @@ class UtilidadesTest {
     void catalogosAceptanElTextoDelFrontend() {
         assertThat(EstadoAsistencia.de("Presente")).isEqualTo(EstadoAsistencia.PRESENTE);
         assertThat(Turno.de("manana")).isEqualTo(Turno.MANANA);
-        assertThat(DiaSemana.de("miercoles")).isEqualTo(DiaSemana.MIERCOLES);
+        assertThat(Nivel.de("secundaria")).isEqualTo(Nivel.SECUNDARIA);
         assertThatThrownBy(() -> Perfil.de("director")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Valores permitidos: administrador, docente, alumno");
     }
@@ -64,21 +56,12 @@ class UtilidadesTest {
     }
 
     @Test
-    void horarioEnTextoAgrupaDiasConLasMismasHoras() {
-        NivelEducativo nivel = new NivelEducativo("Primaria", 2);
-        Asignacion a = new Asignacion();
-        a.setCodigo("MAT-3A");
-        a.setCurso(new Curso("Matemática"));
-        a.setSeccion(new Seccion(new Grado(nivel, "3", "3ro grado", 3), "A", Turno.MANANA));
-        Docente d = new Docente();
-        d.setNombres("Ana");
-        d.setApellidos("Castillo");
-        a.setDocente(d);
-        a.reemplazarHorarios(List.of(
-                new Horario(DiaSemana.MIERCOLES, LocalTime.of(8, 0), LocalTime.of(9, 30)),
-                new Horario(DiaSemana.LUNES, LocalTime.of(8, 0), LocalTime.of(9, 30)),
-                new Horario(DiaSemana.VIERNES, LocalTime.of(11, 15), LocalTime.of(13, 0))));
-        assertThat(AsignacionResponse.de(a, 0).horario()).isEqualTo("Lun - Mié 08:00 - 09:30 · Viernes 11:15 - 13:00");
+    void etiquetasDeGradoComoElFrontend() {
+        assertThat(new GradoSeccion(Nivel.PRIMARIA, "3", "A", Turno.MANANA).getNombre()).isEqualTo("3ro grado A - Primaria");
+        assertThat(new GradoSeccion(Nivel.SECUNDARIA, "5", "C", Turno.TARDE).getGradoEtiqueta()).isEqualTo("5to año");
+        assertThat(new GradoSeccion(Nivel.INICIAL, "4 años", "B", Turno.MANANA).getGradoEtiqueta()).isEqualTo("4 años");
+        assertThat(new Curso("Matemática", new GradoSeccion(Nivel.PRIMARIA, "1", "A", Turno.MANANA), null).getNombreConAula())
+                .isEqualTo("Matemática (1ro grado A)");
     }
 
     @Test

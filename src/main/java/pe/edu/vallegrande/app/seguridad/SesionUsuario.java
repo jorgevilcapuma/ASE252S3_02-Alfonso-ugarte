@@ -36,11 +36,6 @@ public record SesionUsuario(
         }
     }
 
-    /** Filtro de "solo lo mío" para un docente: una cuenta sin ficha vinculada no ve ningún curso (nunca null = todos). */
-    public Long docenteFiltro() {
-        return docenteId == null ? -1L : docenteId;
-    }
-
     /** Un docente solo puede gestionar su propia ficha y sus cursos. */
     public void verificarDocente(Long docenteId) {
         if (esDocente() && !docenteId.equals(this.docenteId)) {

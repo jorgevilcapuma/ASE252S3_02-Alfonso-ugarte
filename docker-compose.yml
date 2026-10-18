@@ -51,7 +51,7 @@ services:
       DATABASE_PASSWORD: ${DB_PASSWORD:-Admin12345}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
       TOKEN_SECRETO: ${TOKEN_SECRETO:-cambia-este-secreto-en-produccion-ugartino-2026}
-      DATOS_DEMO: ${DATOS_DEMO:-true}
+      DATOS_DEMO: ${DATOS_DEMO:-false}
       TZ: America/Lima
     ports:
       - "${BE_PORT:-8080}:8080"

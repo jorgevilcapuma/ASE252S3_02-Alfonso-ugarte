@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.dto.request.LoginRequest;
 import pe.edu.vallegrande.app.dto.response.LoginResponse;
 import pe.edu.vallegrande.app.dto.response.SesionResponse;
@@ -20,10 +19,13 @@ import pe.edu.vallegrande.app.service.AuthService;
 @Tag(name = "Autenticación")
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthRest {
 
     private final AuthService service;
+
+    public AuthRest(AuthService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Ingresar al portal",
             description = "Administrador/docente: correo y contraseña. Alumno: nombre completo y DNI. Devuelve el token Bearer.")

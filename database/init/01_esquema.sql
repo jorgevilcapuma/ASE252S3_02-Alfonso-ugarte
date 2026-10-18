@@ -1,6 +1,10 @@
 -- =====================================================================
 -- Portal Ugartino Digital - Esquema (SQL Server 2019+)
--- Tablas, claves primarias y foráneas, restricciones e índices.
+-- Control de asistencia de estudiantes, docentes y personal administrativo.
+--
+--   Maestras:       usuarios, grados_secciones, docentes, estudiantes, cursos
+--   Transaccionales: asistencia_estudiante, asistencia_personal, justificaciones
+--
 -- Las entidades JPA se validan contra este esquema (spring.jpa.hibernate.ddl-auto=validate).
 -- Los datos maestros y de demostración los carga la aplicación al iniciar (DatosIniciales.java).
 -- Idempotente: solo crea lo que no existe.
@@ -11,325 +15,196 @@ GO
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
+-- Sin caché de IDENTITY: si el servidor se reinicia, los ids no saltan de 1000 en 1000 (1, 2, 3... y no 10002).
+-- Para corregir saltos ya existentes: database/mantenimiento/renumerar_ids.sql
+ALTER DATABASE SCOPED CONFIGURATION SET IDENTITY_CACHE = OFF;
+GO
 
 -- ---------------------------------------------------------------------
 -- TABLAS MAESTRAS
 -- ---------------------------------------------------------------------
 
-IF OBJECT_ID(N'dbo.institucion', N'U') IS NULL
-CREATE TABLE dbo.institucion (
-    id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_institucion PRIMARY KEY,
-    nombre           NVARCHAR(150) NOT NULL,
-    codigo_modular   NVARCHAR(7)   NOT NULL CONSTRAINT uq_institucion_codigo_modular UNIQUE,
-    direccion        NVARCHAR(200) NOT NULL,
-    color_principal  NVARCHAR(7)   NOT NULL,
-    color_secundario NVARCHAR(7)   NOT NULL,
-    logo             NVARCHAR(MAX) NULL,
-    actualizado_en   DATETIME2(6)  NOT NULL,
-    CONSTRAINT ck_institucion_codigo_modular CHECK (LEN(codigo_modular) = 7 AND codigo_modular NOT LIKE N'%[^0-9]%'),
-    CONSTRAINT ck_institucion_colores CHECK (color_principal LIKE N'#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]'
-                                         AND color_secundario LIKE N'#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]')
-);
-GO
-
-IF OBJECT_ID(N'dbo.nivel_educativo', N'U') IS NULL
-CREATE TABLE dbo.nivel_educativo (
-    id     BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_nivel_educativo PRIMARY KEY,
-    nombre NVARCHAR(30) NOT NULL CONSTRAINT uq_nivel_nombre UNIQUE,
-    orden  INT          NOT NULL CONSTRAINT ck_nivel_orden CHECK (orden > 0)
-);
-GO
-
-IF OBJECT_ID(N'dbo.grado', N'U') IS NULL
-CREATE TABLE dbo.grado (
-    id       BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_grado PRIMARY KEY,
-    nivel_id BIGINT       NOT NULL CONSTRAINT fk_grado_nivel REFERENCES dbo.nivel_educativo (id),
-    codigo   NVARCHAR(20) NOT NULL,      -- valor del frontend: "3 años", "1".."6", "1".."5"
-    etiqueta NVARCHAR(40) NOT NULL,      -- "1ro grado", "3ro año", "4 años"
-    orden    INT          NOT NULL CONSTRAINT ck_grado_orden CHECK (orden > 0),
-    CONSTRAINT uq_grado_nivel_codigo UNIQUE (nivel_id, codigo)
-);
-GO
-
-IF OBJECT_ID(N'dbo.seccion', N'U') IS NULL
-CREATE TABLE dbo.seccion (
-    id       BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_seccion PRIMARY KEY,
-    grado_id BIGINT       NOT NULL CONSTRAINT fk_seccion_grado REFERENCES dbo.grado (id),
-    letra    NVARCHAR(2)  NOT NULL,
-    turno    NVARCHAR(10) NOT NULL CONSTRAINT ck_seccion_turno CHECK (turno IN (N'Mañana', N'Tarde')),
-    CONSTRAINT uq_seccion_grado_letra UNIQUE (grado_id, letra)
-);
-GO
-
-IF OBJECT_ID(N'dbo.curso', N'U') IS NULL
-CREATE TABLE dbo.curso (
-    id          BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_curso PRIMARY KEY,
-    nombre      NVARCHAR(120) NOT NULL CONSTRAINT uq_curso_nombre UNIQUE,
-    descripcion NVARCHAR(255) NULL
-);
-GO
-
-IF OBJECT_ID(N'dbo.fase_proyecto', N'U') IS NULL
-CREATE TABLE dbo.fase_proyecto (
-    id        BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_fase_proyecto PRIMARY KEY,
-    orden     INT           NOT NULL CONSTRAINT uq_fase_orden UNIQUE,
-    semana    NVARCHAR(10)  NOT NULL,
-    titulo    NVARCHAR(80)  NOT NULL,
-    actividad NVARCHAR(300) NOT NULL,
-    producto  NVARCHAR(150) NOT NULL,
-    estado    NVARCHAR(12)  NOT NULL CONSTRAINT ck_fase_estado CHECK (estado IN (N'Completada', N'En curso', N'Pendiente'))
-);
-GO
-
--- Personal del colegio: eliminación lógica (estado I) y restauración (estado A).
-IF OBJECT_ID(N'dbo.personal', N'U') IS NULL
-CREATE TABLE dbo.personal (
-    id            BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_personal PRIMARY KEY,
-    nombres       NVARCHAR(80)  NOT NULL,
-    apellidos     NVARCHAR(80)  NOT NULL,
-    dni           NVARCHAR(8)   NOT NULL CONSTRAINT uq_personal_dni UNIQUE,
-    cargo         NVARCHAR(20)  NOT NULL CONSTRAINT ck_personal_cargo
-                      CHECK (cargo IN (N'Docente', N'Auxiliar', N'Administrativo', N'Directivo', N'Servicio')),
-    area          NVARCHAR(80)  NULL,
-    celular       NVARCHAR(9)   NULL,
-    correo        NVARCHAR(120) NULL,
-    sexo          NVARCHAR(1)   NOT NULL CONSTRAINT ck_personal_sexo CHECK (sexo IN (N'M', N'F')),
-    fecha_ingreso DATE          NULL,
-    estado        NVARCHAR(1)   NOT NULL CONSTRAINT ck_personal_estado CHECK (estado IN (N'A', N'I')),
-    created_at    DATETIME2(6)  NOT NULL,
-    updated_at    DATETIME2(6)  NULL,
-    deleted_at    DATETIME2(6)  NULL,
-    restored_at   DATETIME2(6)  NULL,
-    CONSTRAINT ck_personal_dni CHECK (LEN(dni) = 8 AND dni NOT LIKE N'%[^0-9]%'),
-    CONSTRAINT ck_personal_celular CHECK (celular IS NULL OR (LEN(celular) = 9 AND celular LIKE N'9%' AND celular NOT LIKE N'%[^0-9]%'))
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_personal_estado')
-    CREATE INDEX ix_personal_estado ON dbo.personal (estado);
-GO
-
--- ---------------------------------------------------------------------
--- PERSONAS Y CUENTAS
--- ---------------------------------------------------------------------
-
-IF OBJECT_ID(N'dbo.usuario', N'U') IS NULL
-CREATE TABLE dbo.usuario (
-    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_usuario PRIMARY KEY,
+-- Cuentas de acceso al portal.
+IF OBJECT_ID(N'dbo.usuarios', N'U') IS NULL
+CREATE TABLE dbo.usuarios (
+    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_usuarios PRIMARY KEY,
     nombre          NVARCHAR(120) NOT NULL,
-    correo          NVARCHAR(120) NOT NULL CONSTRAINT uq_usuario_correo UNIQUE,
+    correo          NVARCHAR(120) NOT NULL CONSTRAINT uq_usuarios_correo UNIQUE,
     contrasena_hash NVARCHAR(200) NOT NULL,   -- PBKDF2-HMAC-SHA256 con sal
-    perfil          NVARCHAR(15)  NOT NULL CONSTRAINT ck_usuario_perfil CHECK (perfil IN (N'administrador', N'docente', N'alumno')),
-    estado          NVARCHAR(10)  NOT NULL CONSTRAINT ck_usuario_estado CHECK (estado IN (N'Activo', N'Inactivo')),
+    perfil          NVARCHAR(15)  NOT NULL CONSTRAINT ck_usuarios_perfil CHECK (perfil IN (N'administrador', N'docente', N'alumno')),
+    estado          NVARCHAR(10)  NOT NULL CONSTRAINT ck_usuarios_estado CHECK (estado IN (N'Activo', N'Inactivo')),
     creado          DATE          NOT NULL,
     ultimo_acceso   DATETIME2(6)  NULL
 );
 GO
 
-IF OBJECT_ID(N'dbo.docente', N'U') IS NULL
-CREATE TABLE dbo.docente (
-    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_docente PRIMARY KEY,
-    usuario_id      BIGINT        NULL CONSTRAINT fk_docente_usuario REFERENCES dbo.usuario (id),
-    nombres         NVARCHAR(80)  NOT NULL,
-    apellidos       NVARCHAR(80)  NOT NULL,
-    dni             NVARCHAR(8)   NOT NULL CONSTRAINT uq_docente_dni UNIQUE,
-    telefono        NVARCHAR(20)  NULL,
-    especialidad    NVARCHAR(120) NULL,
-    colegiatura     NVARCHAR(40)  NULL,
-    codigo_plaza    NVARCHAR(30)  NULL,
-    condicion       NVARCHAR(30)  NULL,
-    nivel_educativo NVARCHAR(30)  NULL,
-    fecha_ingreso   DATE          NULL,
-    CONSTRAINT ck_docente_dni CHECK (LEN(dni) = 8 AND dni NOT LIKE N'%[^0-9]%')
+-- Aulas: nivel + grado + sección (letra) con su turno.
+IF OBJECT_ID(N'dbo.grados_secciones', N'U') IS NULL
+CREATE TABLE dbo.grados_secciones (
+    id      BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_grados_secciones PRIMARY KEY,
+    nivel   NVARCHAR(12) NOT NULL CONSTRAINT ck_grados_secciones_nivel CHECK (nivel IN (N'Inicial', N'Primaria', N'Secundaria')),
+    grado   NVARCHAR(10) NOT NULL,      -- "3 años".."5 años" en Inicial, "1".."6" en Primaria, "1".."5" en Secundaria
+    seccion NVARCHAR(2)  NOT NULL,
+    turno   NVARCHAR(10) NOT NULL CONSTRAINT ck_grados_secciones_turno CHECK (turno IN (N'Mañana', N'Tarde')),
+    estado  NVARCHAR(1)  NOT NULL CONSTRAINT df_grados_secciones_estado DEFAULT (N'A')
+                CONSTRAINT ck_grados_secciones_estado CHECK (estado IN (N'A', N'I')),
+    CONSTRAINT uq_grados_secciones UNIQUE (nivel, grado, seccion)
+);
+GO
+-- Bases creadas antes de la eliminación lógica de aulas.
+IF COL_LENGTH(N'dbo.grados_secciones', N'estado') IS NULL
+    ALTER TABLE dbo.grados_secciones ADD estado NVARCHAR(1) NOT NULL CONSTRAINT df_grados_secciones_estado DEFAULT (N'A')
+        CONSTRAINT ck_grados_secciones_estado CHECK (estado IN (N'A', N'I'));
+GO
+
+-- Todo el personal del colegio (docentes, auxiliares, administrativos, directivos y de servicio).
+-- Eliminación lógica (estado I) y restauración (estado A).
+IF OBJECT_ID(N'dbo.docentes', N'U') IS NULL
+CREATE TABLE dbo.docentes (
+    id            BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_docentes PRIMARY KEY,
+    usuario_id    BIGINT        NULL CONSTRAINT fk_docentes_usuario REFERENCES dbo.usuarios (id),
+    nombres       NVARCHAR(80)  NOT NULL,
+    apellidos     NVARCHAR(80)  NOT NULL,
+    dni           NVARCHAR(8)   NOT NULL CONSTRAINT uq_docentes_dni UNIQUE,
+    cargo         NVARCHAR(20)  NOT NULL CONSTRAINT ck_docentes_cargo
+                      CHECK (cargo IN (N'Docente', N'Auxiliar', N'Administrativo', N'Directivo', N'Servicio')),
+    especialidad  NVARCHAR(120) NULL,
+    area          NVARCHAR(80)  NULL,
+    celular       NVARCHAR(9)   NULL,
+    correo        NVARCHAR(120) NULL,
+    sexo          NVARCHAR(1)   NOT NULL CONSTRAINT ck_docentes_sexo CHECK (sexo IN (N'M', N'F')),
+    fecha_ingreso DATE          NULL,
+    estado        NVARCHAR(1)   NOT NULL CONSTRAINT ck_docentes_estado CHECK (estado IN (N'A', N'I')),
+    creado_en     DATETIME2(6)  NOT NULL,
+    actualizado_en DATETIME2(6) NULL,
+    CONSTRAINT ck_docentes_dni CHECK (LEN(dni) = 8 AND dni NOT LIKE N'%[^0-9]%'),
+    CONSTRAINT ck_docentes_celular CHECK (celular IS NULL OR (LEN(celular) = 9 AND celular LIKE N'9%' AND celular NOT LIKE N'%[^0-9]%'))
 );
 GO
 -- Una cuenta se vincula a lo sumo a un docente (un UNIQUE común admitiría un solo NULL).
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_docente_usuario')
-    CREATE UNIQUE INDEX uq_docente_usuario ON dbo.docente (usuario_id) WHERE usuario_id IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_docentes_usuario')
+    CREATE UNIQUE INDEX uq_docentes_usuario ON dbo.docentes (usuario_id) WHERE usuario_id IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_docentes_estado')
+    CREATE INDEX ix_docentes_estado ON dbo.docentes (estado);
 GO
 
-IF OBJECT_ID(N'dbo.estudiante', N'U') IS NULL
-CREATE TABLE dbo.estudiante (
-    id         BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_estudiante PRIMARY KEY,
-    usuario_id BIGINT        NULL CONSTRAINT fk_estudiante_usuario REFERENCES dbo.usuario (id),
-    nombres    NVARCHAR(80)  NOT NULL,
-    apellidos  NVARCHAR(80)  NOT NULL,
-    dni        NVARCHAR(8)   NOT NULL CONSTRAINT uq_estudiante_dni UNIQUE,
-    genero     NVARCHAR(1)   NULL CONSTRAINT ck_estudiante_genero CHECK (genero IN (N'M', N'F')),
-    telefono   NVARCHAR(20)  NULL,
-    correo     NVARCHAR(120) NULL,
-    creado     DATE          NOT NULL,
-    CONSTRAINT ck_estudiante_dni CHECK (LEN(dni) = 8 AND dni NOT LIKE N'%[^0-9]%')
+-- Estudiantes con su aula actual. Eliminación lógica (estado I = retirado) y restauración (estado A).
+IF OBJECT_ID(N'dbo.estudiantes', N'U') IS NULL
+CREATE TABLE dbo.estudiantes (
+    id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_estudiantes PRIMARY KEY,
+    usuario_id       BIGINT        NULL CONSTRAINT fk_estudiantes_usuario REFERENCES dbo.usuarios (id),
+    grado_seccion_id BIGINT        NOT NULL CONSTRAINT fk_estudiantes_grado_seccion REFERENCES dbo.grados_secciones (id),
+    nombres          NVARCHAR(80)  NOT NULL,
+    apellidos        NVARCHAR(80)  NOT NULL,
+    dni              NVARCHAR(8)   NOT NULL CONSTRAINT uq_estudiantes_dni UNIQUE,
+    genero           NVARCHAR(1)   NULL CONSTRAINT ck_estudiantes_genero CHECK (genero IN (N'M', N'F')),
+    telefono         NVARCHAR(20)  NULL,
+    correo           NVARCHAR(120) NULL,
+    estado           NVARCHAR(1)   NOT NULL CONSTRAINT ck_estudiantes_estado CHECK (estado IN (N'A', N'I')),
+    creado           DATE          NOT NULL,
+    CONSTRAINT ck_estudiantes_dni CHECK (LEN(dni) = 8 AND dni NOT LIKE N'%[^0-9]%')
 );
 GO
--- Migración para bases creadas antes de agregar el género.
-IF COL_LENGTH(N'dbo.estudiante', N'genero') IS NULL
-    EXEC (N'ALTER TABLE dbo.estudiante ADD genero NVARCHAR(1) NULL CONSTRAINT ck_estudiante_genero CHECK (genero IN (N''M'', N''F''))');
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_estudiante_usuario')
-    CREATE UNIQUE INDEX uq_estudiante_usuario ON dbo.estudiante (usuario_id) WHERE usuario_id IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_estudiantes_usuario')
+    CREATE UNIQUE INDEX uq_estudiantes_usuario ON dbo.estudiantes (usuario_id) WHERE usuario_id IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_estudiantes_grado_seccion')
+    CREATE INDEX ix_estudiantes_grado_seccion ON dbo.estudiantes (grado_seccion_id, estado);
 GO
 
--- ---------------------------------------------------------------------
--- CURSOS POR SECCIÓN Y HORARIO
--- ---------------------------------------------------------------------
-
-IF OBJECT_ID(N'dbo.asignacion', N'U') IS NULL
-CREATE TABLE dbo.asignacion (
-    id         BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_asignacion PRIMARY KEY,
-    codigo     NVARCHAR(20) NOT NULL CONSTRAINT uq_asignacion_codigo UNIQUE,
-    curso_id   BIGINT       NOT NULL CONSTRAINT fk_asignacion_curso REFERENCES dbo.curso (id),
-    seccion_id BIGINT       NOT NULL CONSTRAINT fk_asignacion_seccion REFERENCES dbo.seccion (id),
-    docente_id BIGINT       NOT NULL CONSTRAINT fk_asignacion_docente REFERENCES dbo.docente (id),
-    aula       NVARCHAR(60) NULL,
-    CONSTRAINT uq_asignacion_curso_seccion UNIQUE (curso_id, seccion_id)
+-- Curso dictado en un aula por un docente (p. ej. "Matemática - 1ro grado A").
+IF OBJECT_ID(N'dbo.cursos', N'U') IS NULL
+CREATE TABLE dbo.cursos (
+    id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_cursos PRIMARY KEY,
+    nombre           NVARCHAR(120) NOT NULL,
+    grado_seccion_id BIGINT        NOT NULL CONSTRAINT fk_cursos_grado_seccion REFERENCES dbo.grados_secciones (id),
+    docente_id       BIGINT        NOT NULL CONSTRAINT fk_cursos_docente REFERENCES dbo.docentes (id),
+    estado           NVARCHAR(1)   NOT NULL CONSTRAINT df_cursos_estado DEFAULT (N'A')
+                         CONSTRAINT ck_cursos_estado CHECK (estado IN (N'A', N'I')),
+    CONSTRAINT uq_cursos_nombre_aula UNIQUE (nombre, grado_seccion_id)
 );
 GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asignacion_docente')
-    CREATE INDEX ix_asignacion_docente ON dbo.asignacion (docente_id);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asignacion_seccion')
-    CREATE INDEX ix_asignacion_seccion ON dbo.asignacion (seccion_id);
+-- Bases creadas antes de la eliminación lógica de cursos.
+IF COL_LENGTH(N'dbo.cursos', N'estado') IS NULL
+    ALTER TABLE dbo.cursos ADD estado NVARCHAR(1) NOT NULL CONSTRAINT df_cursos_estado DEFAULT (N'A')
+        CONSTRAINT ck_cursos_estado CHECK (estado IN (N'A', N'I'));
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_cursos_docente')
+    CREATE INDEX ix_cursos_docente ON dbo.cursos (docente_id);
 GO
 
-IF OBJECT_ID(N'dbo.horario', N'U') IS NULL
-CREATE TABLE dbo.horario (
-    id            BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_horario PRIMARY KEY,
-    asignacion_id BIGINT       NOT NULL CONSTRAINT fk_horario_asignacion REFERENCES dbo.asignacion (id) ON DELETE CASCADE,
-    dia           NVARCHAR(10) NOT NULL CONSTRAINT ck_horario_dia CHECK (dia IN (N'Lunes', N'Martes', N'Miércoles', N'Jueves', N'Viernes')),
-    hora_inicio   TIME         NOT NULL,
-    hora_fin      TIME         NOT NULL,
-    CONSTRAINT ck_horario_rango CHECK (hora_fin > hora_inicio),
-    CONSTRAINT uq_horario_bloque UNIQUE (asignacion_id, dia, hora_inicio)
+-- ---------------------------------------------------------------------
+-- TABLAS TRANSACCIONALES
+-- ---------------------------------------------------------------------
+
+-- Asistencia de estudiantes: curso_id NULL = asistencia diaria del aula; con curso = asistencia de esa clase.
+-- "pendiente" significa que no hay fila.
+IF OBJECT_ID(N'dbo.asistencia_estudiante', N'U') IS NULL
+CREATE TABLE dbo.asistencia_estudiante (
+    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_asistencia_estudiante PRIMARY KEY,
+    estudiante_id  BIGINT        NOT NULL CONSTRAINT fk_asistencia_estudiante_estudiante REFERENCES dbo.estudiantes (id),
+    curso_id       BIGINT        NULL CONSTRAINT fk_asistencia_estudiante_curso REFERENCES dbo.cursos (id),
+    fecha          DATE          NOT NULL,
+    estado         NVARCHAR(12)  NOT NULL CONSTRAINT ck_asistencia_estudiante_estado
+                       CHECK (estado IN (N'presente', N'tardanza', N'falta', N'justificado')),
+    observacion    NVARCHAR(255) NULL,
+    registrado_por BIGINT        NULL CONSTRAINT fk_asistencia_estudiante_usuario REFERENCES dbo.usuarios (id),
+    actualizado_en DATETIME2(6)  NOT NULL
 );
 GO
+-- Un registro por estudiante, fecha y curso; y uno solo diario (sin curso).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_asistencia_estudiante_curso')
+    CREATE UNIQUE INDEX uq_asistencia_estudiante_curso ON dbo.asistencia_estudiante (estudiante_id, curso_id, fecha) WHERE curso_id IS NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_asistencia_estudiante_diaria')
+    CREATE UNIQUE INDEX uq_asistencia_estudiante_diaria ON dbo.asistencia_estudiante (estudiante_id, fecha) WHERE curso_id IS NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asistencia_estudiante_fecha')
+    CREATE INDEX ix_asistencia_estudiante_fecha ON dbo.asistencia_estudiante (fecha, estado) INCLUDE (estudiante_id, curso_id);
+GO
 
--- ---------------------------------------------------------------------
--- MATRÍCULA
--- ---------------------------------------------------------------------
-
-IF OBJECT_ID(N'dbo.matricula', N'U') IS NULL
-CREATE TABLE dbo.matricula (
-    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_matricula PRIMARY KEY,
-    estudiante_id   BIGINT       NOT NULL CONSTRAINT fk_matricula_estudiante REFERENCES dbo.estudiante (id),
-    seccion_id      BIGINT       NOT NULL CONSTRAINT fk_matricula_seccion REFERENCES dbo.seccion (id),
-    anio_academico  INT          NOT NULL CONSTRAINT ck_matricula_anio CHECK (anio_academico BETWEEN 2000 AND 2100),
-    fecha_matricula DATE         NOT NULL,
-    estado          NVARCHAR(10) NOT NULL CONSTRAINT ck_matricula_estado CHECK (estado IN (N'Activa', N'Retirada')),
-    fecha_retiro    DATE         NULL,
-    CONSTRAINT uq_matricula_estudiante_anio UNIQUE (estudiante_id, anio_academico),
-    CONSTRAINT ck_matricula_retiro CHECK ((estado = N'Retirada') OR fecha_retiro IS NULL)
+-- Marcación de entrada y salida del personal (tabla docentes): una por persona y fecha.
+IF OBJECT_ID(N'dbo.asistencia_personal', N'U') IS NULL
+CREATE TABLE dbo.asistencia_personal (
+    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_asistencia_personal PRIMARY KEY,
+    docente_id     BIGINT        NOT NULL CONSTRAINT fk_asistencia_personal_docente REFERENCES dbo.docentes (id),
+    fecha          DATE          NOT NULL,
+    hora_entrada   TIME          NOT NULL,
+    hora_salida    TIME          NULL,
+    estado         NVARCHAR(10)  NOT NULL CONSTRAINT ck_asistencia_personal_estado CHECK (estado IN (N'puntual', N'tardanza')),
+    observacion    NVARCHAR(200) NULL,
+    registrado_por BIGINT        NULL CONSTRAINT fk_asistencia_personal_usuario REFERENCES dbo.usuarios (id),
+    actualizado_en DATETIME2(6)  NOT NULL,
+    CONSTRAINT uq_asistencia_personal_fecha UNIQUE (docente_id, fecha),
+    CONSTRAINT ck_asistencia_personal_salida CHECK (hora_salida IS NULL OR hora_salida > hora_entrada)
 );
 GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_matricula_seccion_estado')
-    CREATE INDEX ix_matricula_seccion_estado ON dbo.matricula (seccion_id, estado);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asistencia_personal_fecha')
+    CREATE INDEX ix_asistencia_personal_fecha ON dbo.asistencia_personal (fecha);
 GO
 
--- ---------------------------------------------------------------------
--- ASISTENCIA
--- ---------------------------------------------------------------------
-
--- Matriz diaria por aula (P/T/F/J). "pendiente" = sin fila.
-IF OBJECT_ID(N'dbo.asistencia_diaria', N'U') IS NULL
-CREATE TABLE dbo.asistencia_diaria (
-    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_asistencia_diaria PRIMARY KEY,
-    estudiante_id  BIGINT       NOT NULL CONSTRAINT fk_asistencia_estudiante REFERENCES dbo.estudiante (id),
-    fecha          DATE         NOT NULL,
-    estado         NVARCHAR(12) NOT NULL CONSTRAINT ck_asistencia_estado CHECK (estado IN (N'presente', N'tardanza', N'falta', N'justificado')),
-    registrado_por BIGINT       NULL CONSTRAINT fk_asistencia_usuario REFERENCES dbo.usuario (id),
-    actualizado_en DATETIME2(6) NOT NULL,
-    CONSTRAINT uq_asistencia_estudiante_fecha UNIQUE (estudiante_id, fecha)
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asistencia_fecha_estado')
-    CREATE INDEX ix_asistencia_fecha_estado ON dbo.asistencia_diaria (fecha, estado) INCLUDE (estudiante_id);
-GO
-
--- Asistencia por curso: una sesión por curso y fecha.
-IF OBJECT_ID(N'dbo.sesion_clase', N'U') IS NULL
-CREATE TABLE dbo.sesion_clase (
-    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_sesion_clase PRIMARY KEY,
-    asignacion_id  BIGINT       NOT NULL CONSTRAINT fk_sesion_asignacion REFERENCES dbo.asignacion (id),
-    fecha          DATE         NOT NULL,
-    registrado_por BIGINT       NULL CONSTRAINT fk_sesion_usuario REFERENCES dbo.usuario (id),
-    actualizado_en DATETIME2(6) NOT NULL,
-    CONSTRAINT uq_sesion_asignacion_fecha UNIQUE (asignacion_id, fecha)
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_sesion_fecha')
-    CREATE INDEX ix_sesion_fecha ON dbo.sesion_clase (fecha);
-GO
-
-IF OBJECT_ID(N'dbo.asistencia_curso', N'U') IS NULL
-CREATE TABLE dbo.asistencia_curso (
-    id            BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_asistencia_curso PRIMARY KEY,
-    sesion_id     BIGINT        NOT NULL CONSTRAINT fk_asistencia_curso_sesion REFERENCES dbo.sesion_clase (id) ON DELETE CASCADE,
-    estudiante_id BIGINT        NOT NULL CONSTRAINT fk_asistencia_curso_estudiante REFERENCES dbo.estudiante (id),
-    estado        NVARCHAR(12)  NOT NULL CONSTRAINT ck_asistencia_curso_estado CHECK (estado IN (N'asistio', N'tardanza', N'falta', N'justificado')),
-    observacion   NVARCHAR(255) NULL,
-    CONSTRAINT uq_asistencia_curso_sesion_estudiante UNIQUE (sesion_id, estudiante_id)
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_asistencia_curso_estudiante')
-    CREATE INDEX ix_asistencia_curso_estudiante ON dbo.asistencia_curso (estudiante_id);
-GO
-
--- ---------------------------------------------------------------------
--- JUSTIFICACIONES, AVISOS Y COMUNICADOS
--- ---------------------------------------------------------------------
-
-IF OBJECT_ID(N'dbo.justificacion', N'U') IS NULL
-CREATE TABLE dbo.justificacion (
-    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_justificacion PRIMARY KEY,
-    estudiante_id   BIGINT        NOT NULL CONSTRAINT fk_justificacion_estudiante REFERENCES dbo.estudiante (id),
-    asignacion_id   BIGINT        NULL CONSTRAINT fk_justificacion_asignacion REFERENCES dbo.asignacion (id),
+-- Solicitudes de justificación de inasistencias de estudiantes (curso_id NULL = día completo).
+IF OBJECT_ID(N'dbo.justificaciones', N'U') IS NULL
+CREATE TABLE dbo.justificaciones (
+    id              BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_justificaciones PRIMARY KEY,
+    estudiante_id   BIGINT        NOT NULL CONSTRAINT fk_justificaciones_estudiante REFERENCES dbo.estudiantes (id),
+    curso_id        BIGINT        NULL CONSTRAINT fk_justificaciones_curso REFERENCES dbo.cursos (id),
     fecha           DATE          NOT NULL,
     motivo          NVARCHAR(200) NOT NULL,
     detalle         NVARCHAR(500) NULL,
     archivo_nombre  NVARCHAR(255) NULL,
-    estado          NVARCHAR(10)  NOT NULL CONSTRAINT ck_justificacion_estado CHECK (estado IN (N'Pendiente', N'Aprobada', N'Observada')),
-    estado_previo   NVARCHAR(12)  NULL CONSTRAINT ck_justificacion_estado_previo
+    estado          NVARCHAR(10)  NOT NULL CONSTRAINT ck_justificaciones_estado CHECK (estado IN (N'Pendiente', N'Aprobada', N'Observada')),
+    estado_previo   NVARCHAR(12)  NULL CONSTRAINT ck_justificaciones_estado_previo
                         CHECK (estado_previo IN (N'presente', N'tardanza', N'falta', N'justificado', N'pendiente')),
     observacion     NVARCHAR(500) NULL,
     fecha_solicitud DATETIME2(6)  NOT NULL,
-    revisado_por    BIGINT        NULL CONSTRAINT fk_justificacion_revisor REFERENCES dbo.usuario (id),
+    revisado_por    BIGINT        NULL CONSTRAINT fk_justificaciones_revisor REFERENCES dbo.usuarios (id),
     fecha_revision  DATETIME2(6)  NULL,
-    CONSTRAINT ck_justificacion_revision CHECK ((estado = N'Pendiente' AND fecha_revision IS NULL) OR (estado <> N'Pendiente' AND fecha_revision IS NOT NULL))
+    CONSTRAINT ck_justificaciones_revision CHECK ((estado = N'Pendiente' AND fecha_revision IS NULL) OR (estado <> N'Pendiente' AND fecha_revision IS NOT NULL))
 );
 GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_justificacion_estudiante_fecha')
-    CREATE INDEX ix_justificacion_estudiante_fecha ON dbo.justificacion (estudiante_id, fecha);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_justificacion_estado')
-    CREATE INDEX ix_justificacion_estado ON dbo.justificacion (estado);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_justificaciones_estudiante_fecha')
+    CREATE INDEX ix_justificaciones_estudiante_fecha ON dbo.justificaciones (estudiante_id, fecha);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_justificaciones_estado')
+    CREATE INDEX ix_justificaciones_estado ON dbo.justificaciones (estado);
 -- Una sola solicitud pendiente por estudiante, fecha y curso (o día completo).
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_justificacion_pendiente')
-    CREATE UNIQUE INDEX uq_justificacion_pendiente ON dbo.justificacion (estudiante_id, fecha, asignacion_id) WHERE estado = N'Pendiente';
-GO
-
-IF OBJECT_ID(N'dbo.aviso_familia', N'U') IS NULL
-CREATE TABLE dbo.aviso_familia (
-    id            BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_aviso_familia PRIMARY KEY,
-    estudiante_id BIGINT       NOT NULL CONSTRAINT fk_aviso_estudiante REFERENCES dbo.estudiante (id),
-    enviado_en    DATETIME2(6) NOT NULL,
-    faltas        INT          NOT NULL CONSTRAINT ck_aviso_faltas CHECK (faltas >= 0),
-    enviado_por   BIGINT       NULL CONSTRAINT fk_aviso_usuario REFERENCES dbo.usuario (id)
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_aviso_estudiante_fecha')
-    CREATE INDEX ix_aviso_estudiante_fecha ON dbo.aviso_familia (estudiante_id, enviado_en);
-GO
-
-IF OBJECT_ID(N'dbo.comunicado', N'U') IS NULL
-CREATE TABLE dbo.comunicado (
-    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_comunicado PRIMARY KEY,
-    titulo         NVARCHAR(150)  NOT NULL,
-    contenido      NVARCHAR(2000) NOT NULL,
-    prioridad      NVARCHAR(10)   NOT NULL CONSTRAINT ck_comunicado_prioridad CHECK (prioridad IN (N'Alta', N'Media', N'Baja')),
-    asignacion_id  BIGINT         NULL CONSTRAINT fk_comunicado_asignacion REFERENCES dbo.asignacion (id),
-    autor_id       BIGINT         NULL CONSTRAINT fk_comunicado_autor REFERENCES dbo.usuario (id),
-    fecha_creacion DATE           NOT NULL
-);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_comunicado_asignacion')
-    CREATE INDEX ix_comunicado_asignacion ON dbo.comunicado (asignacion_id);
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'ix_comunicado_fecha')
-    CREATE INDEX ix_comunicado_fecha ON dbo.comunicado (fecha_creacion);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'uq_justificaciones_pendiente')
+    CREATE UNIQUE INDEX uq_justificaciones_pendiente ON dbo.justificaciones (estudiante_id, fecha, curso_id) WHERE estado = N'Pendiente';
 GO

@@ -3,7 +3,6 @@ package pe.edu.vallegrande.app.service.impl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.dto.request.LoginRequest;
 import pe.edu.vallegrande.app.dto.response.LoginResponse;
 import pe.edu.vallegrande.app.dto.response.SesionResponse;
@@ -11,12 +10,10 @@ import pe.edu.vallegrande.app.exception.ApiException;
 import pe.edu.vallegrande.app.model.Docente;
 import pe.edu.vallegrande.app.model.Estudiante;
 import pe.edu.vallegrande.app.model.Usuario;
-import pe.edu.vallegrande.app.model.enums.EstadoMatricula;
 import pe.edu.vallegrande.app.model.enums.EstadoUsuario;
 import pe.edu.vallegrande.app.model.enums.Perfil;
 import pe.edu.vallegrande.app.repository.DocenteRepository;
 import pe.edu.vallegrande.app.repository.EstudianteRepository;
-import pe.edu.vallegrande.app.repository.MatriculaRepository;
 import pe.edu.vallegrande.app.repository.UsuarioRepository;
 import pe.edu.vallegrande.app.seguridad.HasherContrasena;
 import pe.edu.vallegrande.app.seguridad.SesionUsuario;
@@ -26,7 +23,6 @@ import pe.edu.vallegrande.app.util.Calendario;
 import pe.edu.vallegrande.app.util.Textos;
 
 @Service
-@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private static final String CORREO = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
@@ -34,16 +30,24 @@ public class AuthServiceImpl implements AuthService {
     private final UsuarioRepository usuarios;
     private final DocenteRepository docentes;
     private final EstudianteRepository estudiantes;
-    private final MatriculaRepository matriculas;
     private final HasherContrasena hasher;
     private final TokenService tokens;
     private final Calendario calendario;
 
+    public AuthServiceImpl(UsuarioRepository usuarios, DocenteRepository docentes, EstudianteRepository estudiantes, HasherContrasena hasher, TokenService tokens, Calendario calendario) {
+        this.usuarios = usuarios;
+        this.docentes = docentes;
+        this.estudiantes = estudiantes;
+        this.hasher = hasher;
+        this.tokens = tokens;
+        this.calendario = calendario;
+    }
+
     @Override
     @Transactional
     public LoginResponse ingresar(LoginRequest request) {
-        boolean alumnoConDni = request.perfil() == Perfil.ALUMNO && Textos.limpiar(request.dni()) != null;
-        SesionUsuario sesion = alumnoConDni ? ingresarAlumnoConDni(request) : ingresarConCorreo(request);
+        // El alumno solo ingresa con su nombre completo y DNI; administrador y docente, con correo y contraseña.
+        SesionUsuario sesion = request.perfil() == Perfil.ALUMNO ? ingresarAlumnoConDni(request) : ingresarConCorreo(request);
         return new LoginResponse(tokens.generar(sesion), sesion.expiraEn(), SesionResponse.de(sesion));
     }
 
@@ -80,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         } else if (usuario.getPerfil() == Perfil.ALUMNO) {
             Estudiante estudiante = estudiantes.findByUsuarioId(usuario.getId())
                     .orElseThrow(() -> ApiException.prohibido("Tu cuenta no está vinculada a un estudiante. Comunícate con el administrador."));
-            verificarMatricula(estudiante);
+            verificarActivo(estudiante);
             estudianteId = estudiante.getId();
             dni = estudiante.getDni();
         }
@@ -92,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
     /** El alumno ingresa con su nombre completo y DNI, igual que en el formulario del portal. */
     private SesionUsuario ingresarAlumnoConDni(LoginRequest request) {
         String nombre = Textos.limpiar(request.nombre());
-        String dni = request.dni().trim();
+        String dni = request.dni() == null ? "" : request.dni().trim();
         if (nombre == null || nombre.split(" ").length < 2) {
             throw ApiException.validacion("Ingresa tu nombre completo con al menos un apellido.");
         }
@@ -106,18 +110,15 @@ public class AuthServiceImpl implements AuthService {
         if (cuenta != null && cuenta.getEstado() == EstadoUsuario.INACTIVO) {
             throw ApiException.prohibido("Esta cuenta está desactivada. Comunícate con el administrador.");
         }
-        verificarMatricula(estudiante);
+        verificarActivo(estudiante);
         String correo = cuenta != null ? cuenta.getCorreo() : (estudiante.getCorreo() == null ? "" : estudiante.getCorreo());
         return new SesionUsuario(cuenta == null ? null : cuenta.getId(), correo, estudiante.getNombreCompleto(), Perfil.ALUMNO,
                 estudiante.getId(), null, estudiante.getDni(), tokens.calcularExpiracion());
     }
 
-    private void verificarMatricula(Estudiante estudiante) {
-        boolean activa = matriculas.buscarDelAnio(estudiante.getId(), calendario.anioActual())
-                .map(m -> m.getEstado() == EstadoMatricula.ACTIVA)
-                .orElse(false);
-        if (!activa) {
-            throw ApiException.prohibido("No tienes una matrícula activa este año. Comunícate con el colegio.");
+    private static void verificarActivo(Estudiante estudiante) {
+        if (!estudiante.esActivo()) {
+            throw ApiException.prohibido("Tu registro de estudiante no está activo. Comunícate con el colegio.");
         }
     }
 

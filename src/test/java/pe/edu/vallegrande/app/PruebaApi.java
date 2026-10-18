@@ -130,26 +130,31 @@ public abstract class PruebaApi {
 
     // ---------- Datos sembrados ----------
 
-    protected long seccionId(String nivel, String grado, String letra, String token) throws Exception {
-        for (JsonNode s : leer(get_("/api/secciones?nivel=" + nivel + "&grado=" + grado, token).andExpect(status().isOk()))) {
-            if (s.get("letra").asText().equals(letra)) {
-                return s.get("id").asLong();
+    protected long gradoSeccionId(String nivel, String grado, String seccion, String token) throws Exception {
+        for (JsonNode g : leer(get_("/api/grados-secciones?nivel=" + nivel + "&grado=" + grado, token).andExpect(status().isOk()))) {
+            if (g.get("seccion").asText().equals(seccion)) {
+                return g.get("id").asLong();
             }
         }
-        throw new IllegalStateException("No existe la sección " + nivel + " " + grado + " " + letra);
+        throw new IllegalStateException("No existe el aula " + nivel + " " + grado + " " + seccion);
     }
 
-    protected long asignacionId(String codigo, String token) throws Exception {
-        for (JsonNode a : leer(get_("/api/asignaciones", token).andExpect(status().isOk()))) {
-            if (a.get("codigo").asText().equals(codigo)) {
-                return a.get("id").asLong();
+    protected long cursoId(String nombre, long gradoSeccionId, String token) throws Exception {
+        for (JsonNode c : leer(get_("/api/cursos?gradoSeccionId=" + gradoSeccionId, token).andExpect(status().isOk()))) {
+            if (c.get("nombre").asText().equals(nombre)) {
+                return c.get("id").asLong();
             }
         }
-        throw new IllegalStateException("No existe el curso " + codigo);
+        throw new IllegalStateException("No existe el curso " + nombre);
     }
 
-    /** Estudiantes activos de la sección, en orden alfabético. */
-    protected JsonNode estudiantesDe(long seccionId, String token) throws Exception {
-        return leer(get_("/api/secciones/" + seccionId + "/estudiantes", token).andExpect(status().isOk()));
+    /** Estudiantes activos del aula, en orden alfabético por apellidos. */
+    protected JsonNode estudiantesDe(long gradoSeccionId, String token) throws Exception {
+        return leer(get_("/api/estudiantes?gradoSeccionId=" + gradoSeccionId, token).andExpect(status().isOk()));
+    }
+
+    /** Id del estudiante de la demo de ingreso (Juan Pérez Ugarte, 1ro grado A de Primaria). */
+    protected long juanPerez() throws Exception {
+        return ingresarAlumno("Juan Pérez Ugarte", "72819201").get("sesion").get("estudianteId").asLong();
     }
 }

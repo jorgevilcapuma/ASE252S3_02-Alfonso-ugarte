@@ -4,16 +4,21 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import pe.edu.vallegrande.app.model.GradoSeccion;
 import pe.edu.vallegrande.app.model.enums.EstadoAsistencia;
 import pe.edu.vallegrande.app.model.enums.Turno;
 
-/** Respuestas de la asistencia diaria por aula. */
+/** Respuestas de la asistencia de estudiantes (diaria por aula o por curso). */
 public final class AsistenciaResponses {
 
     private AsistenciaResponses() {
     }
 
-    public record AulaResponse(Long seccionId, String nivel, String grado, String gradoEtiqueta, String seccion, Turno turno) {
+    public record AulaResponse(Long gradoSeccionId, String nivel, String grado, String gradoEtiqueta, String seccion, Turno turno) {
+
+        public static AulaResponse de(GradoSeccion g) {
+            return new AulaResponse(g.getId(), g.getNivel().getValor(), g.getGrado(), g.getGradoEtiqueta(), g.getSeccion(), g.getTurno());
+        }
     }
 
     public record ConteoEstados(int presente, int tardanza, int falta, int justificado, int pendiente) {
@@ -27,26 +32,24 @@ public final class AsistenciaResponses {
         }
     }
 
-    /** Registro del día en un aula (pantalla matriz-asistencia, vista diaria). */
-    public record AsistenciaDiaResponse(AulaResponse aula, LocalDate fecha, List<RegistroEstudiante> registros, ConteoEstados resumen) {
+    /** Asistencia del aula en una fecha; cursoId/cursoNombre son null en la asistencia diaria. */
+    public record AsistenciaDiaResponse(AulaResponse aula, Long cursoId, String cursoNombre, LocalDate fecha,
+                                        List<RegistroEstudiante> registros, ConteoEstados resumen) {
     }
 
-    public record RegistroEstudiante(Long estudianteId, String nombre, String dni, EstadoAsistencia estado) {
+    public record RegistroEstudiante(Long estudianteId, String nombre, String dni, EstadoAsistencia estado, String observacion) {
     }
 
     /** Vista mensual: un mapa fecha → estado por estudiante; los fines de semana se informan aparte. */
-    public record MatrizMensualResponse(AulaResponse aula, String mes, List<LocalDate> dias, List<LocalDate> finesDeSemana,
-                                        List<FilaMensual> filas) {
+    public record MatrizMensualResponse(AulaResponse aula, Long cursoId, String cursoNombre, String mes, List<LocalDate> dias,
+                                        List<LocalDate> finesDeSemana, List<FilaMensual> filas) {
     }
 
     public record FilaMensual(Long estudianteId, String nombre, String dni, Map<LocalDate, EstadoAsistencia> estados,
                               ConteoEstados resumen) {
     }
 
-    public record RegistroHistorial(LocalDate fecha, EstadoAsistencia estado) {
-    }
-
-    /** Fila compacta para consultas por rango (dashboard, alertas, matriz mensual). */
-    public record RegistroDia(Long estudianteId, LocalDate fecha, EstadoAsistencia estado) {
+    /** Registro del historial de un estudiante (cursoId null = asistencia diaria). */
+    public record RegistroHistorial(LocalDate fecha, Long cursoId, String cursoNombre, EstadoAsistencia estado, String observacion) {
     }
 }

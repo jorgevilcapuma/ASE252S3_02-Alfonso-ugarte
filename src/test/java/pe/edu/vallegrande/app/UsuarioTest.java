@@ -107,9 +107,33 @@ class UsuarioTest extends PruebaApi {
         delete_("/api/usuarios/" + elena, admin).andExpect(status().isNoContent());
         get_("/api/usuarios/" + elena, admin).andExpect(status().isNotFound());
         // La ficha docente se conserva, solo pierde la cuenta vinculada.
-        get_("/api/docentes", admin).andExpect(jsonPath("$[?(@.nombreCompleto == 'Elena Salazar Ríos')].usuarioId").isEmpty());
-        // Carmen Rojas es autora de un comunicado.
+        get_("/api/docentes", admin).andExpect(jsonPath("$[?(@.nombreCompleto == 'Salazar Ríos, Elena')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.nombreCompleto == 'Salazar Ríos, Elena')].usuarioId").isEmpty());
+        // Carmen Rojas registró asistencia.
+        put_("/api/asistencia-estudiantes/estudiantes/" + juanPerez(), Map.of("fecha", HOY.toString(), "estado", "presente"),
+                docente("carmen.rojas@ie20191.edu.pe")).andExpect(status().isOk());
         delete_("/api/usuarios/" + usuarioId("carmen.rojas@ie20191.edu.pe", admin), admin).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje", containsString("Desactívala en lugar de eliminarla")));
+    }
+
+    @Test
+    void eliminaYRestauraCuentasDeFormaLogica() throws Exception {
+        String admin = admin();
+        long luis = usuarioId(LUIS, admin);
+        patch_("/api/usuarios/" + luis + "/eliminar", null, admin).andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("Inactivo"));
+        patch_("/api/usuarios/" + luis + "/eliminar", null, admin).andExpect(status().isConflict());
+        get_("/api/usuarios?estado=I", admin).andExpect(jsonPath("$[?(@.id == " + luis + ")]").isNotEmpty());
+        get_("/api/usuarios?estado=A", admin).andExpect(jsonPath("$[?(@.id == " + luis + ")]").isEmpty());
+        get_("/api/usuarios?estado=Z", admin).andExpect(status().isBadRequest());
+        String cuerpo = json.writeValueAsString(java.util.Map.of("perfil", "docente", "correo", LUIS, "contrasena", CLAVE));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(cuerpo)).andExpect(status().isForbidden());
+
+        patch_("/api/usuarios/" + luis + "/restaurar", null, admin).andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("Activo"));
+        ingresar("docente", LUIS, CLAVE);
+        // El administrador no puede eliminarse a sí mismo.
+        patch_("/api/usuarios/" + usuarioId(ADMIN, admin) + "/eliminar", null, admin).andExpect(status().isConflict());
     }
 }

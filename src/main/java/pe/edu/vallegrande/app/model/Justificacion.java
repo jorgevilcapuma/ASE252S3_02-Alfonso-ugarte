@@ -26,9 +26,9 @@ import pe.edu.vallegrande.app.model.enums.EstadoJustificacion;
  * para restaurarlo si la solicitud se observa.
  */
 @Entity
-@Table(name = "justificacion", indexes = {
-        @Index(name = "ix_justificacion_estudiante_fecha", columnList = "estudiante_id, fecha"),
-        @Index(name = "ix_justificacion_estado", columnList = "estado")
+@Table(name = "justificaciones", indexes = {
+        @Index(name = "ix_justificaciones_estudiante_fecha", columnList = "estudiante_id, fecha"),
+        @Index(name = "ix_justificaciones_estado", columnList = "estado")
 })
 @Getter
 @Setter
@@ -40,13 +40,13 @@ public class Justificacion {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "estudiante_id", nullable = false, foreignKey = @ForeignKey(name = "fk_justificacion_estudiante"))
+    @JoinColumn(name = "estudiante_id", nullable = false, foreignKey = @ForeignKey(name = "fk_justificaciones_estudiante"))
     private Estudiante estudiante;
 
     /** Curso de la inasistencia (opcional: sin curso se justifica el día completo). */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "asignacion_id", foreignKey = @ForeignKey(name = "fk_justificacion_asignacion"))
-    private Asignacion asignacion;
+    @JoinColumn(name = "curso_id", foreignKey = @ForeignKey(name = "fk_justificaciones_curso"))
+    private Curso curso;
 
     /** Fecha de la clase que se justifica. */
     @Column(nullable = false)
@@ -78,7 +78,7 @@ public class Justificacion {
     private LocalDateTime fechaSolicitud;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "revisado_por", foreignKey = @ForeignKey(name = "fk_justificacion_revisor"))
+    @JoinColumn(name = "revisado_por", foreignKey = @ForeignKey(name = "fk_justificaciones_revisor"))
     private Usuario revisadoPor;
 
     @Column(name = "fecha_revision")

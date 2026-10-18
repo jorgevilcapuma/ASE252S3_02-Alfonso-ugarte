@@ -14,18 +14,18 @@ public interface JustificacionRepository extends JpaRepository<Justificacion, Lo
 
     @Query("""
             select j from Justificacion j join fetch j.estudiante e
-            left join fetch j.asignacion a left join fetch a.curso left join fetch j.revisadoPor
+            left join fetch j.curso c left join fetch j.revisadoPor
             where (:estado is null or j.estado = :estado) and (:estudianteId is null or e.id = :estudianteId)
-              and (:asignacionId is null or a.id = :asignacionId) and (:docenteId is null or a.docente.id = :docenteId)
+              and (:cursoId is null or c.id = :cursoId) and (:docenteId is null or c.docente.id = :docenteId)
               and (:desde is null or j.fecha >= :desde) and (:hasta is null or j.fecha <= :hasta)
             order by j.fechaSolicitud desc, j.id desc
             """)
-    List<Justificacion> buscar(EstadoJustificacion estado, Long estudianteId, Long asignacionId, Long docenteId,
+    List<Justificacion> buscar(EstadoJustificacion estado, Long estudianteId, Long cursoId, Long docenteId,
                                LocalDate desde, LocalDate hasta);
 
     @Query("""
             select j from Justificacion j join fetch j.estudiante e
-            left join fetch j.asignacion a left join fetch a.curso left join fetch j.revisadoPor
+            left join fetch j.curso c left join fetch c.docente left join fetch j.revisadoPor
             where j.id = :id
             """)
     Optional<Justificacion> buscarCompleta(Long id);
@@ -34,11 +34,9 @@ public interface JustificacionRepository extends JpaRepository<Justificacion, Lo
     @Query("""
             select count(j) > 0 from Justificacion j
             where j.estudiante.id = :estudianteId and j.fecha = :fecha and j.estado = :estado
-              and ((:asignacionId is null and j.asignacion is null) or j.asignacion.id = :asignacionId)
+              and ((:cursoId is null and j.curso is null) or j.curso.id = :cursoId)
             """)
-    boolean existeSolicitud(Long estudianteId, LocalDate fecha, Long asignacionId, EstadoJustificacion estado);
+    boolean existeSolicitud(Long estudianteId, LocalDate fecha, Long cursoId, EstadoJustificacion estado);
 
-    long countByEstado(EstadoJustificacion estado);
-
-    boolean existsByEstudianteId(Long estudianteId);
+    boolean existsByCursoId(Long cursoId);
 }

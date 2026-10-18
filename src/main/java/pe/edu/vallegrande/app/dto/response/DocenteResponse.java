@@ -1,31 +1,32 @@
 package pe.edu.vallegrande.app.dto.response;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import pe.edu.vallegrande.app.model.Docente;
 
-/** Equivale a PerfilDocente del frontend. */
+/** Docente o miembro del personal; nombreCompleto en formato "Apellidos, Nombres". */
 public record DocenteResponse(
         Long id,
         String nombres,
         String apellidos,
         String nombreCompleto,
         String dni,
-        String email,
-        String telefono,
+        String cargo,
         String especialidad,
-        String colegiatura,
-        String codigoPlaza,
-        String condicion,
-        String nivelEducativo,
+        String area,
+        String celular,
+        String correo,
+        String sexo,
         LocalDate fechaIngreso,
-        Long usuarioId) {
+        String estado,
+        Long usuarioId,
+        LocalDateTime creadoEn,
+        LocalDateTime actualizadoEn) {
 
     public static DocenteResponse de(Docente d) {
-        return new DocenteResponse(d.getId(), d.getNombres(), d.getApellidos(), d.getNombreCompleto(), d.getDni(),
-                d.getUsuario() == null ? null : d.getUsuario().getCorreo(),
-                d.getTelefono(), d.getEspecialidad(), d.getColegiatura(), d.getCodigoPlaza(), d.getCondicion(),
-                d.getNivelEducativo(), d.getFechaIngreso(),
-                d.getUsuario() == null ? null : d.getUsuario().getId());
+        return new DocenteResponse(d.getId(), d.getNombres(), d.getApellidos(), d.getApellidos() + ", " + d.getNombres(), d.getDni(),
+                d.getCargo(), d.getEspecialidad(), d.getArea(), d.getCelular(), d.getCorreo(), d.getSexo(), d.getFechaIngreso(),
+                d.getEstado(), d.getUsuario() == null ? null : d.getUsuario().getId(), d.getCreadoEn(), d.getActualizadoEn());
     }
 }

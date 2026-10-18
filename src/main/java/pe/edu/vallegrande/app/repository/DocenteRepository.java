@@ -10,8 +10,13 @@ import pe.edu.vallegrande.app.model.Docente;
 
 public interface DocenteRepository extends JpaRepository<Docente, Long> {
 
-    @Query("select d from Docente d left join fetch d.usuario order by d.apellidos, d.nombres")
-    List<Docente> listar();
+    /** Filtros opcionales: estado (A/I) y cargo. */
+    @Query("""
+            select d from Docente d left join fetch d.usuario
+            where (:estado is null or d.estado = :estado) and (:cargo is null or d.cargo = :cargo)
+            order by d.apellidos, d.nombres
+            """)
+    List<Docente> listar(String estado, String cargo);
 
     @Query("select d from Docente d left join fetch d.usuario where d.id = :id")
     Optional<Docente> buscar(Long id);
@@ -21,4 +26,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Long> {
     boolean existsByDni(String dni);
 
     boolean existsByDniAndIdNot(String dni, Long id);
+
+    boolean existsByCorreoIgnoreCase(String correo);
+
+    boolean existsByCorreoIgnoreCaseAndIdNot(String correo, Long id);
 }

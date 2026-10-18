@@ -50,9 +50,23 @@ class AutenticacionTest extends PruebaApi {
 
     @Test
     void cuentaDesactivadaNoIngresa() throws Exception {
-        post_("/api/auth/login", Map.of("perfil", "alumno", "correo", "juan.alvarado@ie20191.edu.pe", "contrasena", CLAVE), null)
+        // Alumna con una cuenta vinculada: si la cuenta se desactiva, tampoco ingresa con su nombre y DNI.
+        String admin = admin();
+        long cuenta = leer(post_("/api/usuarios", Map.of("nombre", "Ana Torres Vega", "correo", "ana.tv@ie20191.edu.pe", "perfil", "alumno"), admin))
+                .get("id").asLong();
+        post_("/api/estudiantes", Map.of("nombres", "Ana", "apellidos", "Torres Vega", "dni", "60000077",
+                "gradoSeccionId", gradoSeccionId("Primaria", "2", "A", admin), "usuarioId", cuenta), admin).andExpect(status().isCreated());
+        patch_("/api/usuarios/" + cuenta + "/eliminar", null, admin).andExpect(status().isOk());
+        post_("/api/auth/login", Map.of("perfil", "alumno", "nombre", "Ana Torres Vega", "dni", "60000077"), null)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensaje", containsString("desactivada")));
+    }
+
+    @Test
+    void elAlumnoSoloIngresaConNombreYDni() throws Exception {
+        post_("/api/auth/login", Map.of("perfil", "alumno", "correo", "lucia.bustamante@ie20191.edu.pe", "contrasena", CLAVE), null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("Ingresa tu nombre completo con al menos un apellido."));
     }
 
     @Test
@@ -98,14 +112,19 @@ class AutenticacionTest extends PruebaApi {
     }
 
     @Test
-    void sesionActualYDatosPublicosDeLaInstitucion() throws Exception {
+    void sesionActual() throws Exception {
         get_("/api/auth/sesion", docente(LUIS)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.correo").value(LUIS))
                 .andExpect(jsonPath("$.nombre").value("Luis Mendoza Castro"));
-        get_("/api/institucion", null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value("I.E. 20191 Alfonso Ugarte"))
-                .andExpect(jsonPath("$.codigoModular").value("0285940"))
-                .andExpect(jsonPath("$.colorPrincipal").value("#9b1b1f"));
+    }
+
+    @Test
+    void estudianteRetiradoNoIngresa() throws Exception {
+        long juan = juanPerez();
+        patch_("/api/estudiantes/" + juan + "/eliminar", null, admin()).andExpect(status().isOk());
+        post_("/api/auth/login", Map.of("perfil", "alumno", "nombre", "Juan Pérez Ugarte", "dni", "72819201"), null)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje", containsString("no está activo")));
     }
 
     @Test

@@ -6,7 +6,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.config.PropiedadesApp;
 import pe.edu.vallegrande.app.dto.request.CambioContrasenaRequest;
 import pe.edu.vallegrande.app.dto.request.UsuarioRequest;
@@ -24,10 +23,10 @@ import pe.edu.vallegrande.app.seguridad.HasherContrasena;
 import pe.edu.vallegrande.app.seguridad.SesionUsuario;
 import pe.edu.vallegrande.app.service.UsuarioService;
 import pe.edu.vallegrande.app.util.Calendario;
+import pe.edu.vallegrande.app.util.FiltroEstado;
 import pe.edu.vallegrande.app.util.Textos;
 
 @Service
-@RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarios;
@@ -38,11 +37,23 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final Calendario calendario;
     private final Entidades entidades;
 
+    public UsuarioServiceImpl(UsuarioRepository usuarios, DocenteRepository docentes, EstudianteRepository estudiantes, HasherContrasena hasher, PropiedadesApp propiedades, Calendario calendario, Entidades entidades) {
+        this.usuarios = usuarios;
+        this.docentes = docentes;
+        this.estudiantes = estudiantes;
+        this.hasher = hasher;
+        this.propiedades = propiedades;
+        this.calendario = calendario;
+        this.entidades = entidades;
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<UsuarioResponse> listar(Perfil perfil, EstadoUsuario estado, String texto) {
+    public List<UsuarioResponse> listar(Perfil perfil, String estado, String texto) {
         String filtro = Textos.limpiar(texto) == null ? null : "%" + Textos.limpiar(texto).toLowerCase() + "%";
-        return usuarios.buscar(perfil, estado, filtro).stream().map(this::respuesta).toList();
+        String valor = FiltroEstado.valor(estado);
+        EstadoUsuario estadoUsuario = valor == null ? null : FiltroEstado.ACTIVO.equals(valor) ? EstadoUsuario.ACTIVO : EstadoUsuario.INACTIVO;
+        return usuarios.buscar(perfil, estadoUsuario, filtro).stream().map(this::respuesta).toList();
     }
 
     @Override
@@ -90,6 +101,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setContrasenaHash(hasher.generar(request.contrasena()));
         }
         vincular(usuario, request);
+        // La ficha vinculada usa el mismo correo que su cuenta.
+        docentes.findByUsuarioId(usuario.getId()).ifPresent(d -> d.setCorreo(usuario.getCorreo()));
+        estudiantes.findByUsuarioId(usuario.getId()).ifPresent(e -> e.setCorreo(usuario.getCorreo()));
         return respuesta(usuario);
     }
 
@@ -110,6 +124,31 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    public UsuarioResponse desactivar(Long id, SesionUsuario sesion) {
+        Usuario usuario = entidades.usuario(id);
+        if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
+            throw ApiException.conflicto("La cuenta ya está eliminada (inactiva).");
+        }
+        if (usuario.getPerfil() == Perfil.ADMINISTRADOR) {
+            protegerAdministrador(usuario, sesion);
+        }
+        usuario.setEstado(EstadoUsuario.INACTIVO);
+        return respuesta(usuario);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponse restaurar(Long id) {
+        Usuario usuario = entidades.usuario(id);
+        if (usuario.getEstado() == EstadoUsuario.ACTIVO) {
+            throw ApiException.conflicto("La cuenta ya está activa.");
+        }
+        usuario.setEstado(EstadoUsuario.ACTIVO);
+        return respuesta(usuario);
+    }
+
+    @Override
+    @Transactional
     public void eliminar(Long id, SesionUsuario sesion) {
         Usuario usuario = entidades.usuario(id);
         if (usuario.getPerfil() == Perfil.ADMINISTRADOR && usuario.getEstado() == EstadoUsuario.ACTIVO) {
@@ -120,7 +159,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuarios.delete(usuario);
             usuarios.flush();
         } catch (DataIntegrityViolationException ex) {
-            throw ApiException.conflicto("La cuenta tiene registros asociados (asistencias, revisiones o comunicados). Desactívala en lugar de eliminarla.");
+            throw ApiException.conflicto("La cuenta tiene registros asociados (asistencias o revisiones de justificaciones). Desactívala en lugar de eliminarla.");
         }
     }
 
@@ -152,8 +191,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     /** Vincula la cuenta a la ficha del docente o del estudiante indicada. */
     private void vincular(Usuario usuario, UsuarioRequest request) {
         if (request.docenteId() != null) {
-            if (usuario.getPerfil() != Perfil.DOCENTE) {
-                throw ApiException.validacion("Solo una cuenta de perfil docente se puede vincular a un docente.");
+            if (usuario.getPerfil() == Perfil.ALUMNO) {
+                throw ApiException.validacion("Solo una cuenta de perfil docente o administrador se puede vincular a un docente o personal.");
             }
             Docente docente = entidades.docente(request.docenteId());
             if (docente.getUsuario() != null && !docente.getUsuario().getId().equals(usuario.getId())) {
@@ -161,6 +200,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             }
             docentes.findByUsuarioId(usuario.getId()).filter(otro -> !otro.getId().equals(docente.getId())).ifPresent(otro -> otro.setUsuario(null));
             docente.setUsuario(usuario);
+            docente.setCorreo(usuario.getCorreo());
         }
         if (request.estudianteId() != null) {
             if (usuario.getPerfil() != Perfil.ALUMNO) {
@@ -172,6 +212,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             }
             estudiantes.findByUsuarioId(usuario.getId()).filter(otro -> !otro.getId().equals(estudiante.getId())).ifPresent(otro -> otro.setUsuario(null));
             estudiante.setUsuario(usuario);
+            estudiante.setCorreo(usuario.getCorreo());
         }
     }
 

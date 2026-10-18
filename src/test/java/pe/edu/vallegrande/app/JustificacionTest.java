@@ -26,7 +26,9 @@ class JustificacionTest extends PruebaApi {
 
     private String estadoDelDia(long estudiante, LocalDate fecha, String token) throws Exception {
         for (JsonNode r : leer(get_("/api/estudiantes/" + estudiante + "/asistencia?desde=" + fecha + "&hasta=" + fecha, token))) {
-            return r.get("estado").asText();
+            if (r.get("cursoId") == null) {
+                return r.get("estado").asText();
+            }
         }
         return "pendiente";
     }
@@ -44,7 +46,7 @@ class JustificacionTest extends PruebaApi {
     void aprobarJustificaElDiaYNoPermiteRevisarDosVeces() throws Exception {
         ingresarComoJuan();
         String admin = admin();
-        put_("/api/asistencia/estudiantes/" + juanId + "/" + LUNES, Map.of("estado", "falta"), admin).andExpect(status().isOk());
+        put_("/api/asistencia-estudiantes/estudiantes/" + juanId, Map.of("fecha", LUNES.toString(), "estado", "falta"), admin).andExpect(status().isOk());
 
         long id = leer(post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "  Cita   médica ", "archivoNombre", "constancia.pdf"), alumno)
                 .andExpect(status().isCreated())
@@ -75,7 +77,7 @@ class JustificacionTest extends PruebaApi {
     void observarRestauraElEstadoPrevioOMarcaFalta() throws Exception {
         ingresarComoJuan();
         String admin = admin();
-        put_("/api/asistencia/estudiantes/" + juanId + "/" + VIERNES, Map.of("estado", "tardanza"), admin);
+        put_("/api/asistencia-estudiantes/estudiantes/" + juanId, Map.of("fecha", VIERNES.toString(), "estado", "tardanza"), admin);
         long conPrevio = solicitar(VIERNES, null);
         patch_("/api/justificaciones/" + conPrevio + "/revision", Map.of("estado", "Observada", "observacion", "Falta el sustento"), admin)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("Observada"));
@@ -88,22 +90,23 @@ class JustificacionTest extends PruebaApi {
 
         // Un día en que estuvo presente no cambia al aprobar.
         LocalDate presente = LocalDate.of(2026, 10, 6);
-        put_("/api/asistencia/estudiantes/" + juanId + "/" + presente, Map.of("estado", "presente"), admin);
+        put_("/api/asistencia-estudiantes/estudiantes/" + juanId, Map.of("fecha", presente.toString(), "estado", "presente"), admin);
         long aprobada = solicitar(presente, null);
         patch_("/api/justificaciones/" + aprobada + "/revision", Map.of("estado", "Aprobada"), admin).andExpect(status().isOk());
         org.assertj.core.api.Assertions.assertThat(estadoDelDia(juanId, presente, admin)).isEqualTo("presente");
     }
 
     @Test
-    void justificacionDeUnCursoLaRevisaSuDocenteYActualizaLaSesion() throws Exception {
+    void justificacionDeUnCursoLaRevisaSuDocenteYActualizaSuAsistencia() throws Exception {
         ingresarComoJuan();
         String luis = docente(LUIS);
-        long mat = asignacionId("MAT-1A", luis);
-        JsonNode filas = leer(get_("/api/asignaciones/" + mat + "/sesiones/" + LUNES, luis)).get("filas");
+        long aula = gradoSeccionId("Primaria", "1", "A", luis);
+        long mat = cursoId("Matemática", aula, luis);
         List<Map<String, Object>> registros = new java.util.ArrayList<>();
-        filas.forEach(f -> registros.add(Map.of("estudianteId", f.get("alumnoId").asLong(),
-                "estado", f.get("alumnoId").asLong() == juanId ? "falta" : "asistio")));
-        put_("/api/asignaciones/" + mat + "/sesiones/" + LUNES, Map.of("registros", registros), luis).andExpect(status().isOk());
+        estudiantesDe(aula, luis).forEach(e -> registros.add(Map.of("estudianteId", e.get("id").asLong(),
+                "estado", e.get("id").asLong() == juanId ? "falta" : "presente")));
+        put_("/api/asistencia-estudiantes/grados-secciones/" + aula, Map.of("fecha", LUNES.toString(), "cursoId", mat, "registros", registros), luis)
+                .andExpect(status().isOk());
 
         long id = solicitar(LUNES, mat);
         get_("/api/justificaciones/" + id, alumno).andExpect(jsonPath("$.cursoNombre").value("Matemática"));
@@ -111,12 +114,14 @@ class JustificacionTest extends PruebaApi {
                 .andExpect(jsonPath("$.mensaje").value("Solo el docente del curso puede revisar esta justificación."));
         patch_("/api/justificaciones/" + id + "/revision", Map.of("estado", "Aprobada"), luis).andExpect(status().isOk());
 
-        JsonNode sesion = leer(get_("/api/asignaciones/" + mat + "/sesiones/" + LUNES, luis));
-        sesion.get("filas").forEach(f -> {
-            if (f.get("alumnoId").asLong() == juanId) {
-                org.assertj.core.api.Assertions.assertThat(f.get("estado").asText()).isEqualTo("justificado");
+        JsonNode clase = leer(get_("/api/asistencia-estudiantes/grados-secciones/" + aula + "?cursoId=" + mat + "&fecha=" + LUNES, luis));
+        clase.get("registros").forEach(r -> {
+            if (r.get("estudianteId").asLong() == juanId) {
+                org.assertj.core.api.Assertions.assertThat(r.get("estado").asText()).isEqualTo("justificado");
             }
         });
+        // La asistencia diaria del aula no cambia con una justificación de curso.
+        org.assertj.core.api.Assertions.assertThat(estadoDelDia(juanId, LUNES, luis)).isEqualTo("pendiente");
         get_("/api/justificaciones?docenteId=" + ingresar("docente", LUIS, CLAVE).get("sesion").get("docenteId").asLong(), luis)
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -129,14 +134,15 @@ class JustificacionTest extends PruebaApi {
         post_("/api/justificaciones", Map.of("fecha", SABADO.toString(), "motivo", "x"), alumno).andExpect(status().isBadRequest());
         post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", " "), alumno).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errores[0]").value("Describe el motivo de la inasistencia."));
-        long cursoDeOtraSeccion = asignacionId("MAT-3A", admin());
+        String admin = admin();
+        long cursoDeOtraSeccion = cursoId("Matemática", gradoSeccionId("Secundaria", "3", "A", admin), admin);
         post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "x", "cursoId", cursoDeOtraSeccion), alumno)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value("El curso indicado no corresponde a la sección del estudiante."));
-        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "x"), admin()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("El curso indicado no corresponde al aula del estudiante."));
+        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "x"), admin).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value("Selecciona el estudiante."));
         long id = solicitar(LUNES, null);
-        patch_("/api/justificaciones/" + id + "/revision", Map.of("estado", "Pendiente"), admin()).andExpect(status().isBadRequest());
+        patch_("/api/justificaciones/" + id + "/revision", Map.of("estado", "Pendiente"), admin).andExpect(status().isBadRequest());
         patch_("/api/justificaciones/" + id + "/revision", Map.of("estado", "Aprobada"), alumno).andExpect(status().isForbidden());
     }
 
@@ -144,7 +150,7 @@ class JustificacionTest extends PruebaApi {
     void elAlumnoSoloVeYEditaLasSuyas() throws Exception {
         ingresarComoJuan();
         String admin = admin();
-        long otroAlumno = estudiantesDe(seccionId("Primaria", "1", "A", admin), admin).get(0).get("id").asLong();
+        long otroAlumno = estudiantesDe(gradoSeccionId("Primaria", "1", "A", admin), admin).get(0).get("id").asLong();
         long ajena = leer(post_("/api/justificaciones", Map.of("estudianteId", otroAlumno, "fecha", LUNES.toString(), "motivo", "Viaje"), admin)
                 .andExpect(status().isCreated())).get("id").asLong();
         long propia = solicitar(VIERNES, null);

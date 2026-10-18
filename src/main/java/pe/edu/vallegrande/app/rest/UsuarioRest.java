@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.dto.request.CambioContrasenaRequest;
 import pe.edu.vallegrande.app.dto.request.UsuarioRequest;
 import pe.edu.vallegrande.app.dto.response.UsuarioResponse;
@@ -31,15 +30,18 @@ import pe.edu.vallegrande.app.service.UsuarioService;
 @Tag(name = "Gestión de usuarios")
 @RestController
 @RequestMapping("/api/usuarios")
-@RequiredArgsConstructor
 @RequierePerfil(Perfil.ADMINISTRADOR)
 public class UsuarioRest {
 
     private final UsuarioService service;
 
-    @Operation(summary = "Listar cuentas (filtros: perfil, estado, texto en nombre o correo)")
+    public UsuarioRest(UsuarioService service) {
+        this.service = service;
+    }
+
+    @Operation(summary = "Listar cuentas (estado: A activas, I inactivas, T todas; filtros: perfil, texto en nombre o correo)")
     @GetMapping
-    public List<UsuarioResponse> listar(@RequestParam(required = false) Perfil perfil, @RequestParam(required = false) EstadoUsuario estado,
+    public List<UsuarioResponse> listar(@RequestParam(required = false) String estado, @RequestParam(required = false) Perfil perfil,
                                         @RequestParam(required = false) String q) {
         return service.listar(perfil, estado, q);
     }
@@ -66,6 +68,19 @@ public class UsuarioRest {
         return service.alternarEstado(id, sesion);
     }
 
+    @Operation(summary = "Eliminar lógico (estado Inactivo: la cuenta no puede ingresar)")
+    @PatchMapping("/{id}/eliminar")
+    public UsuarioResponse desactivar(@PathVariable Long id, SesionUsuario sesion) {
+        return service.desactivar(id, sesion);
+    }
+
+    @Operation(summary = "Restaurar lógico (estado Activo)")
+    @PatchMapping("/{id}/restaurar")
+    public UsuarioResponse restaurar(@PathVariable Long id) {
+        return service.restaurar(id);
+    }
+
+    @Operation(summary = "Eliminar físicamente (solo cuentas sin registros asociados)")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable Long id, SesionUsuario sesion) {

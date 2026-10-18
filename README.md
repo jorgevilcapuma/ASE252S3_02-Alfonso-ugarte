@@ -1,8 +1,8 @@
 # Portal Ugartino Digital — Backend
 
-API REST del sistema de asistencia escolar de la **I.E. 20191 Alfonso Ugarte**, construida a partir del frontend Angular
-`ASE252S3_02-Alfonso-ugarte`, que ya está conectado a esta API: todas sus pantallas leen y guardan en la base de datos
-SQL Server, con validaciones, permisos por perfil y reglas de negocio en el servidor.
+API REST del control de asistencia de la **I.E. 20191 Alfonso Ugarte**: registra la asistencia de estudiantes
+(diaria por aula y por curso), de docentes y del personal administrativo, con justificaciones de inasistencias.
+Trabaja sobre 8 tablas en SQL Server, con validaciones, permisos por perfil y reglas de negocio en el servidor.
 
 **Tecnologías** (las mismas del backend del curso): Java 21 · Spring Boot 3.3 · Spring Data JPA (Hibernate 6) ·
 Bean Validation · SQL Server 2022 · Lombok · springdoc-openapi (Swagger) · JUnit 5 + MockMvc + H2 para las pruebas.
@@ -51,35 +51,62 @@ Variables de entorno (todas opcionales):
 | `CORS_ORIGINS` | `http://localhost:4200` | Origen del frontend (`ng serve`) |
 | `TOKEN_SECRETO` | (valor de desarrollo) | Firma de los tokens: **cámbialo en producción** |
 | `CONTRASENA_INICIAL` | `123456` | Contraseña de las cuentas creadas sin contraseña |
-| `DATOS_DEMO` / `DIAS_HISTORIAL` | `true` / `22` | Datos de demostración y días hábiles de historial |
+| `DATOS_DEMO` / `DIAS_HISTORIAL` | `false` / `22` | `true` carga los datos de demostración (sección 2) y sus días hábiles de historial |
 | `ZONA_HORARIA` | `America/Lima` | Define el "hoy" de la asistencia |
 
 ### Pruebas
 
 ```bash
-mvn test        # 81 pruebas: API completa sobre H2 (modo SQL Server) con reloj fijo
+mvn test        # 57 pruebas: API completa sobre H2 (modo SQL Server) con reloj fijo
 ```
+
+### Postman
+
+`postman/Ugartino-Backend-CRUD.postman_collection.json`: CRUD de las 5 tablas maestras (Docentes, Estudiantes, Usuarios,
+Cursos, Grados y secciones), cada una con **Listar, Listar Estado, Crear, Listar ID, Editar, Eliminar Lógico y Restaurar
+Lógico**. Ejecuta primero *Login (administrador)*, que guarda el token. Con el backend levantado:
+
+```bash
+postman collection run postman/Ugartino-Backend-CRUD.postman_collection.json   # 36 peticiones, 67 verificaciones
+```
+
+### IDs con saltos (1, 10, 10002…)
+
+SQL Server guardaba en caché 1000 valores de IDENTITY y los perdía al reiniciarse. El esquema ya la desactiva
+(`IDENTITY_CACHE = OFF`); para renumerar saltos que ya existan (con el backend detenido):
+
+```bash
+docker stop ugartino-backend
+docker exec -i ugartino-sqlserver /opt/mssql-tools18/bin/sqlcmd -C -b -I -S localhost -U sa -P Admin12345 < database/mantenimiento/renumerar_ids.sql
+docker start ugartino-backend
+```
+
+### Base creada con la versión anterior
+
+Si tu `ugartino_db` (o `./datos-local`) se creó con el modelo anterior, las tablas antiguas siguen ahí junto a las nuevas.
+Para quitarlas ejecuta a mano `database/migracion/eliminar_tablas_anteriores.sql` (borra sus datos), o con Docker
+`docker compose down -v` para empezar con la base vacía. En el perfil `local`, borra la carpeta `./datos-local`.
 
 ---
 
-## 2. Cuentas de demostración
+## 2. Datos iniciales y de demostración
 
-Son las mismas del frontend (`UsuariosService` y el login). Contraseña: **123456**.
+Por defecto la base arranca **vacía**: solo se crean las 42 aulas (Inicial, Primaria y Secundaria con secciones A, B y C)
+y la cuenta del administrador `admin@ie20191.edu.pe` (contraseña **123456**); docentes, estudiantes, cursos y asistencia
+se registran desde la API. Con `DATOS_DEMO=true` (y sin docentes registrados) se cargan además estos datos de ejemplo.
+Contraseña: **123456**.
 
 | Perfil | Ingreso |
 |---|---|
 | Administrador | `admin@ie20191.edu.pe` |
 | Docente | `elena.salazar@`, `luis.mendoza@`, `carmen.rojas@`, `jorge.paredes@`, `rosa.huaman@`, `carlos.mendoza@` (+ `ie20191.edu.pe`) |
-| Alumno (nombre + DNI) | **Juan Pérez Ugarte** · DNI **72819201** (1° Primaria A) |
+| Alumno (nombre + DNI) | **Juan Pérez Ugarte** · DNI **72819201** (1ro grado A de Primaria) |
 | Alumno (correo) | `lucia.bustamante@ie20191.edu.pe` · `juan.alvarado@...` está **inactiva** (prueba de bloqueo) |
 
-Datos cargados: 3 niveles, 14 grados, 42 secciones (A, B, C; la C en turno tarde), 16 cursos, 9 docentes,
-505 estudiantes (12 por aula, como `crearEstudiantes()` del frontend), 20 cursos por sección con horario, historial
-de asistencia diaria y por curso, justificaciones pendientes, comunicados y las 7 fases del proyecto.
-
-> **Ajuste respecto del frontend:** la lista de cursos de demostración del panel docente asignaba a un mismo profesor
-> clases a la misma hora. El backend rechaza cruces de horario, así que esos cursos se repartieron entre docentes de
-> la especialidad (el perfil "Carlos Antonio Mendoza Ríos" de *Mi perfil* tiene ahora sus cursos de Secundaria).
+Datos cargados: 42 aulas (Inicial, Primaria y Secundaria con secciones A, B y C; la C en turno tarde), 9 docentes y
+4 miembros del personal (directivo, administrativo, auxiliar y servicio), 505 estudiantes (12 por aula), 12 cursos
+(1ro grado A de Primaria y 3ro año A de Secundaria), historial de asistencia diaria y de marcaciones del personal,
+y una justificación pendiente.
 
 ---
 
@@ -87,16 +114,17 @@ de asistencia diaria y por curso, justificaciones pendientes, comunicados y las 
 
 ```
 src/main/java/pe/edu/vallegrande/app
-├─ config/        PropiedadesApp, CORS e interceptor (WebConfig), reloj del colegio, Swagger, DatosIniciales
+├─ config/        PropiedadesApp (incluye reglas de asistencia), CORS e interceptor, reloj del colegio, Swagger, DatosIniciales
 ├─ seguridad/     token firmado (HMAC-SHA256), contraseñas PBKDF2, @RequierePerfil, @Publico, interceptor
-├─ model/         entidades JPA + enums (con el mismo texto que usa el frontend: "presente", "Pendiente", "Mañana")
-├─ repository/    Spring Data JPA (consultas con JOIN FETCH y agregados GROUP BY para alertas y dashboard)
+├─ model/         8 entidades JPA + enums (con el texto que usa el frontend: "presente", "Pendiente", "Mañana")
+├─ repository/    Spring Data JPA
 ├─ service/       interfaces + impl/ con la lógica de negocio
-├─ dto/           request (validaciones) y response (forma de las interfaces TypeScript del frontend)
+├─ dto/           request (validaciones) y response
 ├─ rest/          controladores REST
 ├─ exception/     ApiException + GlobalExceptionHandler
 └─ util/          Calendario (días hábiles), Textos
-database/init/    00_base_datos.sql, 01_esquema.sql (fuente de verdad del esquema en SQL Server)
+database/init/       00_base_datos.sql, 01_esquema.sql (fuente de verdad del esquema en SQL Server)
+database/migracion/  eliminar_tablas_anteriores.sql (manual)
 ```
 
 - **Esquema**: lo crea `01_esquema.sql`; la aplicación arranca con `ddl-auto=validate`, así que cualquier diferencia
@@ -111,90 +139,60 @@ database/init/    00_base_datos.sql, 01_esquema.sql (fuente de verdad del esquem
 ## 4. Modelo de datos
 
 ```
-nivel_educativo 1─* grado 1─* seccion 1─* matricula *─1 estudiante *─0..1 usuario
-                                  │                         │
-curso 1─* asignacion *─1 seccion  ├─* asistencia_diaria     ├─* justificacion *─0..1 asignacion
-          │  *─1 docente *─0..1 usuario                     ├─* aviso_familia
-          ├─* horario                                       └─* asistencia_curso *─1 sesion_clase *─1 asignacion
-          ├─* sesion_clase
-          └─* comunicado *─0..1 usuario (autor)
-institucion (1 fila)   fase_proyecto
+usuarios 1─0..1 docentes 1─* cursos *─1 grados_secciones 1─* estudiantes *─0..1 usuarios
+                   │                                              │
+                   └─* asistencia_personal          asistencia_estudiante *─0..1 cursos
+                                                    justificaciones       *─0..1 cursos
 ```
 
-| Tabla | Contenido | Restricciones principales |
-|---|---|---|
-| `institucion` | Nombre, código modular, dirección, colores, logo | Código de 7 dígitos, colores `#RRGGBB` |
-| `nivel_educativo`, `grado`, `seccion` | Estructura del colegio | Nivel único; grado único por nivel; letra única por grado; turno Mañana/Tarde |
-| `curso` | Catálogo de áreas | Nombre único |
-| `asignacion`, `horario` | Curso dictado en una sección por un docente, con aula y bloques | Código único; un curso por sección; `hora_fin > hora_inicio`; sin cruces (servicio) |
-| `usuario` | Cuentas | Correo único; perfil y estado por CHECK; contraseña PBKDF2 |
-| `docente`, `estudiante` | Fichas personales (el estudiante incluye género M/F) | DNI único de 8 dígitos; cuenta vinculada única (índice filtrado) |
-| `matricula` | Aula del estudiante por año | Una por estudiante y año; estado Activa/Retirada |
-| `asistencia_diaria` | Matriz P/T/F/J | Una por estudiante y fecha ("pendiente" = sin fila) |
-| `sesion_clase`, `asistencia_curso` | Asistencia por curso | Una sesión por curso y fecha; un registro por alumno y sesión |
-| `justificacion` | Solicitudes y revisión | Una pendiente por estudiante, fecha y curso (índice filtrado) |
-| `aviso_familia` | Historial de avisos de alertas | — |
-| `comunicado` | Avisos de docentes | Prioridad Alta/Media/Baja; curso opcional (sin curso = todos) |
-| `fase_proyecto` | Fases del proyecto | Orden único |
-| `personal` | Personal del colegio (docente, auxiliar, administrativo, directivo, servicio) | DNI único; sexo M/F; celular de 9 dígitos; estado A/I con fechas de auditoría |
+| N.º | Tabla | Tipo | Contenido | Restricciones principales |
+|---|---|---|---|---|
+| 1 | `estudiantes` | Maestra | Datos del estudiante y su aula (`grado_seccion_id`) | DNI único de 8 dígitos; estado A/I (retiro lógico); cuenta vinculada única |
+| 2 | `docentes` | Maestra | Docentes **y** demás personal (cargo Docente, Auxiliar, Administrativo, Directivo, Servicio) | DNI único; sexo M/F; celular de 9 dígitos; estado A/I (eliminación lógica) |
+| 3 | `usuarios` | Maestra | Cuentas de acceso | Correo único; perfil y estado por CHECK; contraseña PBKDF2 |
+| 4 | `grados_secciones` | Maestra | Nivel + grado + sección + turno | Combinación única; nivel Inicial/Primaria/Secundaria; turno Mañana/Tarde |
+| 5 | `cursos` | Maestra | Curso dictado en un aula por un docente | Nombre único por aula; el docente debe tener cargo Docente |
+| 6 | `asistencia_estudiante` | Transaccional | P/T/F/J; `curso_id` NULL = asistencia diaria del aula | Uno por estudiante, fecha y curso (índices filtrados); "pendiente" = sin fila |
+| 7 | `asistencia_personal` | Transaccional | Entrada/salida del personal (tabla `docentes`) | Una por persona y fecha; estado puntual/tardanza; salida > entrada |
+| 8 | `justificaciones` | Transaccional | Solicitudes y revisión (`curso_id` NULL = día completo) | Una pendiente por estudiante, fecha y curso (índice filtrado) |
 
 ---
 
-## 5. Reglas de negocio (tomadas del frontend)
+## 5. Reglas de negocio
 
-- **Asistencia**: no se registra en fechas futuras ni en fin de semana; solo alumnos matriculados en el aula/curso.
-- **Justificaciones**: se guarda el estado del día al solicitar. *Aprobar* marca el día como `justificado` (salvo que
-  estuviera presente) y la falta/tardanza del curso como justificada. *Observar* devuelve el estado previo o, si no
-  había, `falta`. Solo se revisan las pendientes; si tiene curso, la revisa su docente (o el administrador).
-- **Alertas tempranas**: faltas en los últimos **20 días hábiles**: 3+ crítica, 2 preventiva, o falta hoy.
-- **Mis estudiantes / alertas por curso**: porcentaje = sesiones sin falta / sesiones (Normal ≥ 80 %, En Riesgo ≥ 68 %).
-- **Matrícula**: DNI de 8 dígitos y único; grado válido para el nivel; el traslado conserva el historial; anular elimina
-  solo si no hay historial (si lo hay, retira la matrícula).
+- **Asistencia de estudiantes**: no se registra en fechas futuras ni en fin de semana; solo estudiantes activos del aula.
+  Un docente corrige hasta `app.asistencia.dias-edicion-docente` (5) días hábiles atrás; la de un curso solo la
+  registra su docente (o el administrador).
+- **Asistencia del personal**: después de `hora-entrada` (07:45) + `minutos-tolerancia` (10) la entrada es tardanza.
+  Se configuran en `application.yml` o con las variables `HORA_ENTRADA`, `MINUTOS_TOLERANCIA`, `DIAS_EDICION_DOCENTE`.
+- **Justificaciones**: se guarda el estado del día (o del curso) al solicitar. *Aprobar* lo marca `justificado` (salvo
+  que estuviera presente). *Observar* devuelve el estado previo o, si no había, `falta`. Si tiene curso, la revisa su
+  docente (o el administrador).
+- **Bajas lógicas**: docentes/personal y estudiantes no se borran (estado I) y se pueden restaurar. Un docente con cursos
+  no se elimina ni cambia de cargo; un aula con estudiantes o cursos no se elimina; un curso con asistencia no se elimina.
 - **Usuarios**: correo único; no se puede desactivar/eliminar la propia cuenta ni al último administrador activo;
   una cuenta con registros se desactiva en lugar de eliminarse.
 
 ---
 
-## 6. Endpoints por pantalla del frontend
+## 6. Endpoints
 
 Base: `/api`. Perfiles: **A** administrador, **D** docente, **E** alumno.
 
-| Pantalla / servicio del frontend | Endpoints |
+| Recurso | Endpoints |
 |---|---|
-| Login (`AuthService`) | `POST /auth/login` (público) · `GET /auth/sesion` |
-| Configuración (`TemaService`, datos del colegio) | `GET /institucion` (público) · `PUT /institucion` A · `POST /institucion/restablecer-identidad` A |
-| Estructura / Selección de sección | `GET /estructura` · CRUD `/niveles`, `/grados`, `/secciones` (A) · `GET /secciones/{id}/estudiantes` A D |
-| Usuarios (`UsuariosService`) | `GET/POST /usuarios` · `GET/PUT/DELETE /usuarios/{id}` · `PATCH /usuarios/{id}/estado` (A) · `PUT /usuarios/{id}/contrasena` (propia o A) |
-| Matrículas | `GET /matriculas?nivel&grado&seccion&q&estado&pagina&tamanio` · `GET /matriculas/resumen` · `POST /matriculas` · `PUT /matriculas/{id}/traslado` · `PATCH /matriculas/{id}/retiro` · `PATCH /matriculas/{id}/reincorporacion` · `DELETE /matriculas/{id}` |
-| Estudiantes | `GET/PUT/DELETE /estudiantes/{id}` · `PUT /estudiantes/{id}/contacto` (E propio) · `GET /estudiantes/{id}/asistencia` · `GET /estudiantes/{id}/avisos` |
-| Matriz de asistencia (diaria y mensual) | `GET /asistencia?desde&hasta&seccionId` (rango, máx. 93 días) · `GET/PUT /asistencia/secciones/{seccionId}?fecha` · `GET /asistencia/secciones/{seccionId}/mensual?mes=AAAA-MM` · `PUT /asistencia/estudiantes/{id}/{fecha}` (A D) |
-| Dashboard | `GET /dashboard?fecha` (A D) |
-| Alertas | `GET /alertas` · `GET /alertas/tendencia?dias=7` · `POST /alertas/avisos` (A D) |
-| Justificaciones | `GET /justificaciones?estado&estudianteId&cursoId&docenteId&desde&hasta` · `POST` · `GET/PUT/DELETE /{id}` · `PATCH /{id}/revision` (A D) |
-| Cursos (catálogo) | CRUD `/cursos` (A; lectura D) |
-| Mis cursos / horario (docente) | CRUD `/asignaciones` (A; lectura D: solo los suyos) · `GET /docentes/{id}/cursos` |
-| Asistencia por curso | `GET/PUT/DELETE /asignaciones/{id}/sesiones/{fecha}` · `GET /asignaciones/{id}/sesiones` |
-| Historial / Reportes (docente) | `GET /docentes/{id}/historial` · `GET /asignaciones/{id}/resumen-mensual?mes` |
-| Mis estudiantes / alertas por curso | `GET /docentes/{id}/estudiantes?cursoId` · `GET /docentes/{id}/alertas` |
-| Mi perfil (docente) | `GET /docentes/{id}` · `PUT /docentes/{id}/perfil` · CRUD `/docentes` (A) |
-| Comunicados | `GET /comunicados?cursoId` (A D E) · `POST` · `GET/PUT/DELETE /{id}` (A D, autor) |
-| Portal del alumno | `GET /alumnos/{id}/perfil` · `/inicio` · `/cursos` · `/asistencia?cursoId&desde&hasta&limite` · `/asistencia/resumen` · `/alertas` · `/comunicaciones` |
-| Fases del proyecto | `GET /fases` · CRUD (A) |
-| Personal (tabla maestra, A) | `GET /personal` · `GET /personal/estado/{A\|I\|T}` · `GET /personal/{id}` · `POST /personal` · `PUT /personal/{id}` · `PATCH /personal/eliminar/{id}` · `PATCH /personal/restaurar/{id}` |
+| Autenticación | `POST /auth/login` (público) · `GET /auth/sesion` |
+| Usuarios (A) | `GET/POST /usuarios` · `GET/PUT/DELETE /usuarios/{id}` · `PATCH /usuarios/{id}/estado` · `PUT /usuarios/{id}/contrasena` (propia o A) |
+| Grados y secciones | `GET /grados-secciones?nivel&grado` (A D) · `GET /grados-secciones/{id}` (A D) · `POST`, `PUT /{id}`, `DELETE /{id}` (A) |
+| Docentes y personal | `GET /docentes?estado=A\|I\|T&cargo` (A) · `GET /docentes/{id}` (A, D propio) · `POST` · `PUT /{id}` · `PATCH /{id}/eliminar` · `PATCH /{id}/restaurar` (A) · `GET /docentes/{id}/cursos` (A, D propio) |
+| Estudiantes | `GET /estudiantes?gradoSeccionId&estado&q` (A D) · `GET /estudiantes/{id}` (A D, E propio) · `POST` · `PUT /{id}` · `PATCH /{id}/eliminar` · `PATCH /{id}/restaurar` (A) · `PUT /{id}/contacto` (A, E propio) · `GET /{id}/asistencia?desde&hasta` (A D, E propio) |
+| Cursos | `GET /cursos?gradoSeccionId&docenteId` (A D) · `GET /cursos/{id}` (A D) · `POST` · `PUT /{id}` · `DELETE /{id}` (A) |
+| Asistencia de estudiantes (A D) | `GET/PUT /asistencia-estudiantes/grados-secciones/{id}?cursoId&fecha` · `GET /asistencia-estudiantes/grados-secciones/{id}/mensual?cursoId&mes=AAAA-MM` · `PUT /asistencia-estudiantes/estudiantes/{id}` |
+| Asistencia del personal (A) | `GET /asistencia-personal?fecha` · `GET /asistencia-personal/reporte?mes` · `PUT /asistencia-personal/{docenteId}/entrada` · `PUT /asistencia-personal/{docenteId}/salida` · `DELETE /asistencia-personal/{docenteId}/{fecha}` |
+| Justificaciones | `GET /justificaciones?estado&estudianteId&cursoId&docenteId&desde&hasta` · `POST` · `GET/PUT/DELETE /{id}` (A D E) · `PATCH /{id}/revision` (A D) |
 
-La colección `postman/Personal.postman_collection.json` prueba esos 7 endpoints (más el login que guarda el token):
-`postman collection run postman/Personal.postman_collection.json`. El personal no se borra: eliminar lo pasa a
-estado `I` (`deletedAt`) y restaurar a `A` (`restoredAt`); no se puede editar mientras está eliminado.
+Fechas `AAAA-MM-DD`, horas `HH:mm`, meses `AAAA-MM`.
 
-### Integración con el frontend
-
-El frontend (`ASE252S3_02-Alfonso-ugarte`) ya consume esta API:
-
-- `core/config/api.ts` define la URL (`http://localhost:8080/api`); `core/interceptors/auth.interceptor.ts` envía el token
-  y vuelve al login si la sesión expira (401).
-- `AsistenciaService`, `UsuariosService`, `TemaService`, `DocenteService` y `AlumnoService` cargan los datos desde la API,
-  los mantienen en memoria para las pantallas y guardan cada cambio en el backend (si el servidor lo rechaza, se revierte
-  y se muestra su mensaje).
-- Los ids del backend se manejan como texto en el frontend; los valores de catálogo viajan igual en ambos
-  (`presente`, `asistio`, `Pendiente`, `Alta`, `Mañana`, `docente`). Fechas `AAAA-MM-DD`, horas `HH:mm`, meses `AAAA-MM`.
-- Si el frontend se sirve en otro puerto, agrégalo a `CORS_ORIGINS` (por ejemplo `http://localhost:4200,http://localhost:4201`).
+> **Frontend:** esta versión reemplaza endpoints que usaba el frontend Angular (`/secciones`, `/matriculas`,
+> `/asignaciones`, `/institucion`, `/comunicados`, `/alertas`, `/dashboard`, `/alumnos`, `/personal`, `/asistencia`).
+> Las pantallas que dependan de ellos deben apuntar a los endpoints de esta tabla.

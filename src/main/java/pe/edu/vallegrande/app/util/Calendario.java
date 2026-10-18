@@ -11,15 +11,17 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.exception.ApiException;
 
 /** Fechas del calendario escolar (días hábiles de lunes a viernes) según el reloj del colegio. */
 @Component
-@RequiredArgsConstructor
 public class Calendario {
 
     private final Clock reloj;
+
+    public Calendario(Clock reloj) {
+        this.reloj = reloj;
+    }
 
     public LocalDate hoy() {
         return LocalDate.now(reloj);

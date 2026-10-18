@@ -19,7 +19,7 @@ import pe.edu.vallegrande.app.model.enums.Perfil;
 
 /** Cuenta institucional administrada desde "Gestión de usuarios". */
 @Entity
-@Table(name = "usuario", uniqueConstraints = @UniqueConstraint(name = "uq_usuario_correo", columnNames = "correo"))
+@Table(name = "usuarios", uniqueConstraints = @UniqueConstraint(name = "uq_usuarios_correo", columnNames = "correo"))
 @Getter
 @Setter
 @NoArgsConstructor

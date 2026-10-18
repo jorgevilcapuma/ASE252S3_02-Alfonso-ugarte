@@ -1,0 +1,1422 @@
+{
+  "info": {
+    "name": "My Collection — Backend (Ugartino Digital)",
+    "description": "CRUD de las tablas maestras del backend: Listar, Listar Estado, Listar ID, Eliminar Lógico, Restaurar Lógico, Crear y Editar.\n\n1. Levanta el backend en http://localhost:8080.\n2. Ejecuta primero **Login (administrador)**: guarda el token.\n3. Ejecuta cada carpeta en orden (o Run collection). Cada carpeta crea su propio registro y lo edita, elimina y restaura.\n\nEstado: A = activo, I = inactivo (en Usuarios: Activo / Inactivo). Listar Estado acepta A, I o T (todos).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "docenteId",
+      "value": ""
+    },
+    {
+      "key": "estudianteId",
+      "value": ""
+    },
+    {
+      "key": "usuarioId",
+      "value": ""
+    },
+    {
+      "key": "cursoId",
+      "value": ""
+    },
+    {
+      "key": "gradoSeccionId",
+      "value": ""
+    },
+    {
+      "key": "aulaId",
+      "value": ""
+    },
+    {
+      "key": "profesorId",
+      "value": ""
+    },
+    {
+      "key": "dni",
+      "value": ""
+    },
+    {
+      "key": "sufijo",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Login (administrador)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"perfil\": \"administrador\",\n  \"correo\": \"admin@ie20191.edu.pe\",\n  \"contrasena\": \"123456\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const r = pm.response.json();",
+              "pm.collectionVariables.set(\"token\", r.token);",
+              "pm.test(\"Devuelve el token\", () => pm.expect(r.token).to.be.a(\"string\").and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Docentes y personal",
+      "description": "Tabla docentes: todo el personal del colegio (cargo Docente, Auxiliar, Administrativo, Directivo o Servicio).",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Devuelve una lista con registros\", () => pm.expect(lista).to.be.an(\"array\").that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes?estado=A",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "A"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Solo registros activos\", () => lista.forEach(r => pm.expect(r.estado).to.eql(\"A\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Rosa María\",\n  \"apellidos\": \"Quispe Torres\",\n  \"dni\": \"{{dni}}\",\n  \"cargo\": \"Auxiliar\",\n  \"especialidad\": \"\",\n  \"area\": \"Secundaria\",\n  \"celular\": \"987654321\",\n  \"correo\": \"rosa.{{dni}}@ie20191.edu.pe\",\n  \"sexo\": \"F\",\n  \"fechaIngreso\": \"2024-03-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"dni\", String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const creado = pm.response.json();",
+                  "pm.collectionVariables.set(\"docenteId\", creado.id);",
+                  "pm.test(\"Se crea activo\", () => pm.expect(creado.estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes/{{docenteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes",
+                "{{docenteId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el registro creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"docenteId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes/{{docenteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes",
+                "{{docenteId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Rosa María\",\n  \"apellidos\": \"Quispe Torres\",\n  \"dni\": \"{{dni}}\",\n  \"cargo\": \"Administrativo\",\n  \"especialidad\": \"\",\n  \"area\": \"Secretaría\",\n  \"celular\": \"987654322\",\n  \"correo\": \"rosa.{{dni}}@ie20191.edu.pe\",\n  \"sexo\": \"F\",\n  \"fechaIngreso\": \"2024-03-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes/{{docenteId}}/eliminar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes",
+                "{{docenteId}}",
+                "eliminar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().estado).to.eql(\"I\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restaurar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docentes/{{docenteId}}/restaurar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docentes",
+                "{{docenteId}}",
+                "restaurar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Vuelve a activo\", () => pm.expect(pm.response.json().estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Estudiantes",
+      "description": "Tabla estudiantes. Listar guarda el aula del primer estudiante (aulaId) para Crear.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Devuelve una lista con registros\", () => pm.expect(lista).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.collectionVariables.set(\"aulaId\", lista[0].gradoSeccionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes?estado=A",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "A"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Solo registros activos\", () => lista.forEach(r => pm.expect(r.estado).to.eql(\"A\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Ana Lucía\",\n  \"apellidos\": \"Torres Vega\",\n  \"dni\": \"{{dni}}\",\n  \"gradoSeccionId\": \"{{aulaId}}\",\n  \"genero\": \"F\",\n  \"telefono\": \"987654321\",\n  \"correo\": \"ana.{{dni}}@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"dni\", String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const creado = pm.response.json();",
+                  "pm.collectionVariables.set(\"estudianteId\", creado.id);",
+                  "pm.test(\"Se crea activo\", () => pm.expect(creado.estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes/{{estudianteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes",
+                "{{estudianteId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el registro creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"estudianteId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes/{{estudianteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes",
+                "{{estudianteId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Ana Lucía\",\n  \"apellidos\": \"Torres Vega\",\n  \"dni\": \"{{dni}}\",\n  \"gradoSeccionId\": \"{{aulaId}}\",\n  \"genero\": \"F\",\n  \"telefono\": \"912345678\",\n  \"correo\": \"ana.torres.{{dni}}@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes/{{estudianteId}}/eliminar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes",
+                "{{estudianteId}}",
+                "eliminar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().estado).to.eql(\"I\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restaurar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiantes/{{estudianteId}}/restaurar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiantes",
+                "{{estudianteId}}",
+                "restaurar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Vuelve a activo\", () => pm.expect(pm.response.json().estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "description": "Tabla usuarios (cuentas del portal). Eliminar lógico deja la cuenta Inactiva: no puede iniciar sesión.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Devuelve una lista con registros\", () => pm.expect(lista).to.be.an(\"array\").that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios?estado=A",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "A"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Solo registros activos\", () => lista.forEach(r => pm.expect(r.estado).to.eql(\"Activo\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Postman\",\n  \"correo\": \"postman.{{sufijo}}@ie20191.edu.pe\",\n  \"perfil\": \"docente\",\n  \"contrasena\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"sufijo\", String(Date.now()).slice(-6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const creado = pm.response.json();",
+                  "pm.collectionVariables.set(\"usuarioId\", creado.id);",
+                  "pm.test(\"Se crea activo\", () => pm.expect(creado.estado).to.eql(\"Activo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el registro creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"usuarioId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Postman Editado\",\n  \"correo\": \"postman.{{sufijo}}@ie20191.edu.pe\",\n  \"perfil\": \"docente\",\n  \"estado\": \"Activo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}/eliminar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}",
+                "eliminar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().estado).to.eql(\"Inactivo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restaurar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}/restaurar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}",
+                "restaurar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Vuelve a activo\", () => pm.expect(pm.response.json().estado).to.eql(\"Activo\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cursos",
+      "description": "Tabla cursos (curso + aula + docente). Listar guarda el aula y el docente del primer curso para Crear.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Devuelve una lista con registros\", () => pm.expect(lista).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.collectionVariables.set(\"aulaId\", lista[0].gradoSeccionId);",
+                  "pm.collectionVariables.set(\"profesorId\", lista[0].docenteId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos?estado=A",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "A"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Solo registros activos\", () => lista.forEach(r => pm.expect(r.estado).to.eql(\"A\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Taller {{sufijo}}\",\n  \"gradoSeccionId\": \"{{aulaId}}\",\n  \"docenteId\": \"{{profesorId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"sufijo\", String(Date.now()).slice(-6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const creado = pm.response.json();",
+                  "pm.collectionVariables.set(\"cursoId\", creado.id);",
+                  "pm.test(\"Se crea activo\", () => pm.expect(creado.estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos/{{cursoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos",
+                "{{cursoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el registro creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"cursoId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos/{{cursoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos",
+                "{{cursoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Taller de Robótica {{sufijo}}\",\n  \"gradoSeccionId\": \"{{aulaId}}\",\n  \"docenteId\": \"{{profesorId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos/{{cursoId}}/eliminar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos",
+                "{{cursoId}}",
+                "eliminar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().estado).to.eql(\"I\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restaurar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cursos/{{cursoId}}/restaurar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cursos",
+                "{{cursoId}}",
+                "restaurar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Vuelve a activo\", () => pm.expect(pm.response.json().estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Grados y secciones",
+      "description": "Tabla grados_secciones (aulas). Solo se elimina un aula sin estudiantes ni cursos activos.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Devuelve una lista con registros\", () => pm.expect(lista).to.be.an(\"array\").that.is.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones?estado=A",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "A"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "pm.test(\"Solo registros activos\", () => lista.forEach(r => pm.expect(r.estado).to.eql(\"A\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivel\": \"Secundaria\",\n  \"grado\": \"P{{sufijo}}\",\n  \"seccion\": \"Z\",\n  \"turno\": \"Tarde\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"sufijo\", String(Date.now()).slice(-6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const creado = pm.response.json();",
+                  "pm.collectionVariables.set(\"gradoSeccionId\", creado.id);",
+                  "pm.test(\"Se crea activo\", () => pm.expect(creado.estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones/{{gradoSeccionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones",
+                "{{gradoSeccionId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el registro creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"gradoSeccionId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones/{{gradoSeccionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones",
+                "{{gradoSeccionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivel\": \"Secundaria\",\n  \"grado\": \"P{{sufijo}}\",\n  \"seccion\": \"Z\",\n  \"turno\": \"Mañana\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones/{{gradoSeccionId}}/eliminar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones",
+                "{{gradoSeccionId}}",
+                "eliminar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().estado).to.eql(\"I\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restaurar Lógico",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/grados-secciones/{{gradoSeccionId}}/restaurar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "grados-secciones",
+                "{{gradoSeccionId}}",
+                "restaurar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Vuelve a activo\", () => pm.expect(pm.response.json().estado).to.eql(\"A\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

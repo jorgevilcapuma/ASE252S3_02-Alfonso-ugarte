@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.dto.request.JustificacionRequest;
 import pe.edu.vallegrande.app.dto.request.RevisionJustificacionRequest;
 import pe.edu.vallegrande.app.dto.response.JustificacionResponse;
@@ -33,11 +32,14 @@ import pe.edu.vallegrande.app.service.JustificacionService;
 @Tag(name = "Justificaciones")
 @RestController
 @RequestMapping("/api/justificaciones")
-@RequiredArgsConstructor
 @RequierePerfil({Perfil.ADMINISTRADOR, Perfil.DOCENTE, Perfil.ALUMNO})
 public class JustificacionRest {
 
     private final JustificacionService service;
+
+    public JustificacionRest(JustificacionService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Listar (un alumno solo ve las suyas)")
     @GetMapping

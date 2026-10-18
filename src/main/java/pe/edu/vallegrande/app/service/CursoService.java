@@ -5,10 +5,9 @@ import java.util.List;
 import pe.edu.vallegrande.app.dto.request.CursoRequest;
 import pe.edu.vallegrande.app.dto.response.CursoResponse;
 
-/** Tabla maestra de cursos / áreas curriculares. */
 public interface CursoService {
 
-    List<CursoResponse> listar();
+    List<CursoResponse> listar(Long gradoSeccionId, Long docenteId, String estado);
 
     CursoResponse obtener(Long id);
 
@@ -16,5 +15,7 @@ public interface CursoService {
 
     CursoResponse actualizar(Long id, CursoRequest request);
 
-    void eliminar(Long id);
+    CursoResponse eliminar(Long id);
+
+    CursoResponse restaurar(Long id);
 }

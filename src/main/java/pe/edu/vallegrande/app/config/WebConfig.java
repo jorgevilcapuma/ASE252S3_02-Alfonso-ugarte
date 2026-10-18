@@ -13,17 +13,20 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.model.enums.ValorTexto;
 import pe.edu.vallegrande.app.seguridad.AutenticacionInterceptor;
 import pe.edu.vallegrande.app.seguridad.SesionArgumentResolver;
 
 @Configuration
-@RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
     private final AutenticacionInterceptor autenticacionInterceptor;
     private final PropiedadesApp propiedades;
+
+    public WebConfig(AutenticacionInterceptor autenticacionInterceptor, PropiedadesApp propiedades) {
+        this.autenticacionInterceptor = autenticacionInterceptor;
+        this.propiedades = propiedades;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

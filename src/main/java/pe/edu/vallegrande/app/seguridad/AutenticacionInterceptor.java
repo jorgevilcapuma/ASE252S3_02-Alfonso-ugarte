@@ -8,7 +8,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import pe.edu.vallegrande.app.exception.ApiException;
 
 /**
@@ -16,12 +15,15 @@ import pe.edu.vallegrande.app.exception.ApiException;
  * y comprueba el perfil declarado con {@link RequierePerfil}.
  */
 @Component
-@RequiredArgsConstructor
 public class AutenticacionInterceptor implements HandlerInterceptor {
 
     public static final String ATRIBUTO_SESION = "sesionUsuario";
 
     private final TokenService tokenService;
+
+    public AutenticacionInterceptor(TokenService tokenService) {
+        this.tokenService = tokenService;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
