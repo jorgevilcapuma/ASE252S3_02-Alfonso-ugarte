@@ -126,6 +126,10 @@ public class JustificacionServiceImpl implements JustificacionService {
         if (request.estado() == EstadoJustificacion.PENDIENTE) {
             throw ApiException.validacion("La revisión debe aprobar u observar la solicitud.");
         }
+        String motivoRevision = Textos.limpiar(request.observacion());
+        if (request.estado() == EstadoJustificacion.OBSERVADA && (motivoRevision == null || motivoRevision.length() < 5)) {
+            throw ApiException.validacion("Para observar la solicitud, escribe el motivo (al menos 5 caracteres).");
+        }
         if (sesion.esDocente() && j.getCurso() != null && !j.getCurso().getDocente().getId().equals(sesion.docenteId())) {
             throw ApiException.prohibido("Solo el docente del curso puede revisar esta justificación.");
         }

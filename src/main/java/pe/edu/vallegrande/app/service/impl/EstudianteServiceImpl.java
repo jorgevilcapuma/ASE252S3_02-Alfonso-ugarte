@@ -13,6 +13,7 @@ import pe.edu.vallegrande.app.model.Estudiante;
 import pe.edu.vallegrande.app.model.GradoSeccion;
 import pe.edu.vallegrande.app.model.Usuario;
 import pe.edu.vallegrande.app.model.enums.Perfil;
+import pe.edu.vallegrande.app.repository.DocenteRepository;
 import pe.edu.vallegrande.app.repository.EstudianteRepository;
 import pe.edu.vallegrande.app.service.EstudianteService;
 import pe.edu.vallegrande.app.util.Calendario;
@@ -25,9 +26,12 @@ public class EstudianteServiceImpl implements EstudianteService {
     private final Calendario calendario;
     private final Entidades entidades;
     private final CuentasAcceso cuentas;
+    private final DocenteRepository docentes;
 
-    public EstudianteServiceImpl(EstudianteRepository estudiantes, Calendario calendario, Entidades entidades, CuentasAcceso cuentas) {
+    public EstudianteServiceImpl(EstudianteRepository estudiantes, Calendario calendario, Entidades entidades, CuentasAcceso cuentas,
+                                 DocenteRepository docentes) {
         this.estudiantes = estudiantes;
+        this.docentes = docentes;
         this.cuentas = cuentas;
         this.calendario = calendario;
         this.entidades = entidades;
@@ -57,6 +61,7 @@ public class EstudianteServiceImpl implements EstudianteService {
         if (estudiantes.existsByDni(request.dni())) {
             throw ApiException.conflicto("Ya existe un estudiante con el DNI " + request.dni() + ".");
         }
+        dniLibreDePersonal(request.dni());
         Estudiante estudiante = new Estudiante();
         aplicar(estudiante, request);
         estudiante.setEstado(Estudiante.ACTIVO);
@@ -70,6 +75,9 @@ public class EstudianteServiceImpl implements EstudianteService {
         Estudiante estudiante = entidades.estudiante(id);
         if (estudiantes.existsByDniAndIdNot(request.dni(), id)) {
             throw ApiException.conflicto("Ya existe otro estudiante con el DNI " + request.dni() + ".");
+        }
+        if (!request.dni().equals(estudiante.getDni())) {
+            dniLibreDePersonal(request.dni());
         }
         aplicar(estudiante, request);
         return EstudianteResponse.de(estudiante);
@@ -122,6 +130,13 @@ public class EstudianteServiceImpl implements EstudianteService {
         estudiante.setCorreo(Textos.correo(request.correo()));
         if (request.usuarioId() != null) {
             vincularCuenta(estudiante, request.usuarioId());
+        }
+    }
+
+    /** Un DNI identifica a una sola persona: no puede pertenecer a la vez a un estudiante y a un docente o personal. */
+    private void dniLibreDePersonal(String dni) {
+        if (docentes.existsByDni(dni)) {
+            throw ApiException.conflicto("El DNI " + dni + " ya pertenece a un docente o personal del colegio. Verifica el número.");
         }
     }
 

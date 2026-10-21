@@ -34,6 +34,40 @@ public class GradoSeccionServiceImpl implements GradoSeccionService {
         this.entidades = entidades;
     }
 
+    /**
+     * Grados que existen en cada nivel: Inicial "3 años" a "5 años" (acepta "3"), Primaria 1 a 6 y Secundaria 1 a 5
+     * (acepta "1°" o "1ro"). Devuelve el grado normalizado como lo guarda la tabla.
+     */
+    static String gradoValido(Nivel nivel, String grado) {
+        String numero = grado == null ? "" : grado.replaceAll("(?i)\\s*(años?|°|º|ro|do|to|er)\\s*$", "").trim();
+        int valor;
+        try {
+            valor = Integer.parseInt(numero);
+        } catch (NumberFormatException ex) {
+            valor = -1;
+        }
+        return switch (nivel) {
+            case INICIAL -> {
+                if (valor < 3 || valor > 5) {
+                    throw ApiException.validacion("En Inicial el grado es 3, 4 o 5 años.");
+                }
+                yield valor + " años";
+            }
+            case PRIMARIA -> {
+                if (valor < 1 || valor > 6) {
+                    throw ApiException.validacion("En Primaria el grado va de 1 a 6.");
+                }
+                yield String.valueOf(valor);
+            }
+            case SECUNDARIA -> {
+                if (valor < 1 || valor > 5) {
+                    throw ApiException.validacion("En Secundaria el grado va de 1 a 5.");
+                }
+                yield String.valueOf(valor);
+            }
+        };
+    }
+
     /** Regla del colegio usada por el frontend: la sección C funciona en la tarde. */
     public static Turno turnoPorDefecto(String seccion) {
         return "C".equalsIgnoreCase(seccion) ? Turno.TARDE : Turno.MANANA;
@@ -102,7 +136,7 @@ public class GradoSeccionServiceImpl implements GradoSeccionService {
     }
 
     private void aplicar(GradoSeccion aula, GradoSeccionRequest request) {
-        String grado = Textos.limpiar(request.grado());
+        String grado = gradoValido(request.nivel(), Textos.limpiar(request.grado()));
         String seccion = request.seccion().trim().toUpperCase();
         gradosSecciones.findByNivelAndGradoIgnoreCaseAndSeccionIgnoreCase(request.nivel(), grado, seccion)
                 .filter(otra -> !otra.getId().equals(aula.getId()))

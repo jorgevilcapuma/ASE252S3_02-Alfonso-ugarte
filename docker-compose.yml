@@ -10,6 +10,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ugartino-sqlserver
+    restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Admin12345}
@@ -35,7 +36,8 @@ services:
       MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Admin12345}
     volumes:
       - ./database/init:/scripts:ro
-    entrypoint: ["/bin/bash", "-c", "for f in /scripts/*.sql; do echo \"Ejecutando $$f\"; /opt/mssql-tools18/bin/sqlcmd -C -b -I -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -i \"$$f\" || exit 1; done"]
+    # Reintenta cada script: tras reiniciar el equipo, SQL Server responde antes de terminar de abrir ugartino_db.
+    entrypoint: ["/bin/bash", "-c", "for f in /scripts/*.sql; do for intento in $$(seq 1 12); do echo \"Ejecutando $$f (intento $$intento)\"; /opt/mssql-tools18/bin/sqlcmd -C -b -I -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -i \"$$f\" && continue 2; sleep 5; done; echo \"Falló $$f\"; exit 1; done"]
     restart: "no"
 
   backend:
@@ -55,7 +57,8 @@ services:
       TZ: America/Lima
     ports:
       - "${BE_PORT:-8080}:8080"
-    restart: on-failure
+    # Vuelve a levantarse al reiniciar el equipo (si arranca antes que SQL Server, reintenta hasta conectar).
+    restart: unless-stopped
 
 volumes:
   ugartino_datos:

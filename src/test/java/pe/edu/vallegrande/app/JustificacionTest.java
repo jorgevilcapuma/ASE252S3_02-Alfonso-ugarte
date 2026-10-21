@@ -85,7 +85,7 @@ class JustificacionTest extends PruebaApi {
 
         LocalDate sinRegistro = LocalDate.of(2026, 10, 7);
         long sinPrevio = solicitar(sinRegistro, null);
-        patch_("/api/justificaciones/" + sinPrevio + "/revision", Map.of("estado", "Observada"), admin).andExpect(status().isOk());
+        patch_("/api/justificaciones/" + sinPrevio + "/revision", Map.of("estado", "Observada", "observacion", "Sin sustento válido"), admin).andExpect(status().isOk());
         org.assertj.core.api.Assertions.assertThat(estadoDelDia(juanId, sinRegistro, admin)).isEqualTo("falta");
 
         // Un día en que estuvo presente no cambia al aprobar.
@@ -129,17 +129,17 @@ class JustificacionTest extends PruebaApi {
     @Test
     void validacionesDeLaSolicitud() throws Exception {
         ingresarComoJuan();
-        post_("/api/justificaciones", Map.of("fecha", HOY.plusDays(1).toString(), "motivo", "x"), alumno).andExpect(status().isBadRequest())
+        post_("/api/justificaciones", Map.of("fecha", HOY.plusDays(1).toString(), "motivo", "Motivo de prueba"), alumno).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value("No se puede justificar una fecha futura."));
-        post_("/api/justificaciones", Map.of("fecha", SABADO.toString(), "motivo", "x"), alumno).andExpect(status().isBadRequest());
+        post_("/api/justificaciones", Map.of("fecha", SABADO.toString(), "motivo", "Motivo de prueba"), alumno).andExpect(status().isBadRequest());
         post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", " "), alumno).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errores[0]").value("Describe el motivo de la inasistencia."));
         String admin = admin();
         long cursoDeOtraSeccion = cursoId("Matemática", gradoSeccionId("Secundaria", "3", "A", admin), admin);
-        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "x", "cursoId", cursoDeOtraSeccion), alumno)
+        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "Motivo de prueba", "cursoId", cursoDeOtraSeccion), alumno)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value("El curso indicado no corresponde al aula del estudiante."));
-        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "x"), admin).andExpect(status().isBadRequest())
+        post_("/api/justificaciones", Map.of("fecha", LUNES.toString(), "motivo", "Motivo de prueba"), admin).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value("Selecciona el estudiante."));
         long id = solicitar(LUNES, null);
         patch_("/api/justificaciones/" + id + "/revision", Map.of("estado", "Pendiente"), admin).andExpect(status().isBadRequest());
@@ -159,7 +159,7 @@ class JustificacionTest extends PruebaApi {
         get_("/api/justificaciones?estudianteId=" + otroAlumno, alumno).andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(propia));
         get_("/api/justificaciones/" + ajena, alumno).andExpect(status().isForbidden());
-        put_("/api/justificaciones/" + ajena, Map.of("fecha", LUNES.toString(), "motivo", "y"), alumno).andExpect(status().isForbidden());
+        put_("/api/justificaciones/" + ajena, Map.of("fecha", LUNES.toString(), "motivo", "Cambio de motivo"), alumno).andExpect(status().isForbidden());
         put_("/api/justificaciones/" + propia, Map.of("fecha", LUNES.toString(), "motivo", "Cambio de fecha"), alumno).andExpect(status().isOk())
                 .andExpect(jsonPath("$.fecha").value(LUNES.toString()));
         get_("/api/justificaciones?estado=Pendiente", admin).andExpect(jsonPath("$.length()").value(2));
