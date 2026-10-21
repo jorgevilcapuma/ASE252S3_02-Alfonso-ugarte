@@ -129,7 +129,10 @@
     <div class="table-toolbar">
       <div><h3>Registro del aula</h3><p>Pulsa P, T, F o J para cada estudiante. Pulsa de nuevo para quitar el registro.</p></div>
       <div class="page-actions">
-        <button class="button button-subtle" type="button" (click)="abrirJustificacion()"><app-icono nombre="justificacion" [tamano]="16" /> Nueva justificación</button>
+        @if (puedeAgregarEstudiantes) {
+          <button class="button button-outline" type="button" (click)="abrirNuevoEstudiante()"><app-icono nombre="mas" [tamano]="16" /> Agregar estudiante</button>
+        }
+        <button class="button button-subtle" type="button" (click)="abrirJustificacion()" [disabled]="!estudiantes.length"><app-icono nombre="justificacion" [tamano]="16" /> Nueva justificación</button>
         <button class="button button-primary" type="button" (click)="marcarTodos()" [disabled]="esFuturo"><app-icono nombre="check" [tamano]="16" /> Marcar pendientes como presentes</button>
       </div>
     </div>
@@ -154,7 +157,13 @@
               <td><button class="row-action" type="button" (click)="abrirJustificacion(estudiante.id)">{{ actual === 'falta' || actual === 'tardanza' ? 'Justificar' : 'Añadir nota' }}</button></td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="empty-state">{{ busqueda ? 'No hay estudiantes que coincidan con la búsqueda.' : 'No hay estudiantes en esta sección.' }}</td></tr>
+            <tr><td colspan="6" class="empty-state">
+              @if (busqueda) { No hay estudiantes que coincidan con la búsqueda. }
+              @else if (puedeAgregarEstudiantes) {
+                <p class="aula-vacia">Aún no hay estudiantes en {{ etiquetaAula }}.</p>
+                <button class="button button-primary" type="button" (click)="abrirNuevoEstudiante()"><app-icono nombre="mas" [tamano]="16" /> Agregar el primer estudiante</button>
+              } @else { No hay estudiantes en esta sección. Pide al administrador que los registre. }
+            </td></tr>
           }
         </tbody>
       </table>
@@ -183,5 +192,33 @@
         <button class="button button-primary" type="button" (click)="guardarJustificacion()">Guardar solicitud</button>
       </div>
     </section>
+  </div>
+}
+
+@if (nuevoEstudiante; as e) {
+  <div class="modal-backdrop" (click)="nuevoEstudiante = null">
+    <form class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-estudiante" (click)="$event.stopPropagation()" (ngSubmit)="guardarEstudiante()">
+      <div class="modal-heading">
+        <div><span class="eyebrow">{{ etiquetaAula }}</span><h2 id="titulo-estudiante">Agregar estudiante</h2></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="nuevoEstudiante = null"><app-icono nombre="cerrar" [tamano]="18" /></button>
+      </div>
+      <p class="modal-description">Se registra en esta aula. Ingresará al portal con su nombre completo y su DNI.</p>
+      <div class="form-grid">
+        <label class="field">Nombres *<input type="text" name="nombres" [(ngModel)]="e.nombres" maxlength="80" autocomplete="off"></label>
+        <label class="field">Apellidos *<input type="text" name="apellidos" [(ngModel)]="e.apellidos" maxlength="80" autocomplete="off"></label>
+        <label class="field">DNI *<input type="text" name="dni" [(ngModel)]="e.dni" (ngModelChange)="soloDigitosDni()" inputmode="numeric" maxlength="8" placeholder="8 dígitos" autocomplete="off"></label>
+        <label class="field">Género
+          <select name="genero" [(ngModel)]="e.genero">
+            <option value="">Sin indicar</option><option value="F">Femenino</option><option value="M">Masculino</option>
+          </select>
+        </label>
+        <label class="field wide">Correo (opcional)<input type="email" name="correo" [(ngModel)]="e.correo" maxlength="120" placeholder="Solo como dato de contacto"></label>
+      </div>
+      @if (errorEstudiante) { <p class="login-error" role="alert">{{ errorEstudiante }}</p> }
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" (click)="nuevoEstudiante = null">Cancelar</button>
+        <button class="button button-primary" type="submit" [disabled]="guardandoEstudiante">{{ guardandoEstudiante ? 'Guardando…' : 'Registrar estudiante' }}</button>
+      </div>
+    </form>
   </div>
 }

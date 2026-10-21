@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,7 +32,12 @@ export class ComunicadosComponent {
   }
 
   async publicarComunicado() {
-    if (!this.titulo.trim() || !this.contenido.trim() || this.publicando) return;
+    if (this.publicando) return;
+    const invalido = R.primero(R.texto(this.titulo, 5, 'El título'), R.texto(this.contenido, 10, 'El contenido'));
+    if (invalido) {
+      this.notificaciones.error('Revisa el comunicado', invalido);
+      return;
+    }
 
     const curso = this.docenteService.cursos().find(c => c.id === this.cursoSeleccionado);
 

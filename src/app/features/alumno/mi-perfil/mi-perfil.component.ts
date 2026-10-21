@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AlumnoService } from '../alumno.service';
@@ -24,6 +25,11 @@ export class MiPerfilComponent {
   }
 
   async guardarContacto(): Promise<void> {
+    const invalido = R.primero(R.telefonoOpcional(this.contacto.telefono), R.correoOpcional(this.contacto.correo));
+    if (invalido) {
+      this.mensaje = invalido;
+      return;
+    }
     this.guardando = true;
     const error = await this.alumno.guardarContacto(this.contacto);
     this.guardando = false;

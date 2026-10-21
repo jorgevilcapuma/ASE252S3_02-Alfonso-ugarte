@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ETIQUETA_PERFIL } from '../../../core/config/navegacion';
@@ -71,6 +72,8 @@ export class UsuariosComponent {
 
   async guardar(): Promise<void> {
     if (this.guardando) return;
+    this.error = R.primero(R.nombreCompleto(this.formulario.nombre), R.correo(this.formulario.correo)) ?? '';
+    if (this.error) return;
     this.guardando = true;
     const resultado = await this.servicio.guardarUsuario(this.formulario, this.editandoId ?? undefined);
     this.guardando = false;

@@ -92,15 +92,16 @@
           <label class="field" [class.wide]="campo.ancho">{{ campo.etiqueta }}{{ campo.requerido ? ' *' : '' }}
             @switch (campo.tipo) {
               @case ('select') {
-                <select [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]">
+                <select [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" (ngModelChange)="limpiarError(campo.clave)" [class.is-invalid]="errores[campo.clave]">
                   @for (opcion of opcionesDe(campo); track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
                 </select>
               }
-              @case ('fecha') { <input type="date" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]"> }
-              @case ('email') { <input type="email" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" [attr.maxlength]="campo.maximo"> }
-              @default { <input type="text" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" [attr.maxlength]="campo.maximo"> }
+              @case ('fecha') { <input type="date" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" (ngModelChange)="limpiarError(campo.clave)" [class.is-invalid]="errores[campo.clave]" [max]="data.hoy"> }
+              @case ('email') { <input type="email" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" (ngModelChange)="limpiarError(campo.clave)" [class.is-invalid]="errores[campo.clave]" [attr.maxlength]="campo.maximo"> }
+              @default { <input type="text" [name]="campo.clave" [id]="'campo-' + campo.clave" [(ngModel)]="f[campo.clave]" (ngModelChange)="limpiarError(campo.clave)" [class.is-invalid]="errores[campo.clave]" [attr.maxlength]="campo.maximo"> }
             }
-            @if (campo.ayuda) { <small class="field-hint">{{ campo.ayuda }}</small> }
+            @if (errores[campo.clave]) { <small class="error" role="alert">{{ errores[campo.clave] }}</small> }
+            @else if (campo.ayuda) { <small class="field-hint">{{ campo.ayuda }}</small> }
           </label>
         }
       </div>

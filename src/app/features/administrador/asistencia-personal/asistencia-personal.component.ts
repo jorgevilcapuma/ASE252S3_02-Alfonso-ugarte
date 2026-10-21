@@ -121,6 +121,14 @@ export class AsistenciaPersonalComponent {
       this.notificaciones.error('Falta la hora de entrada', 'Indica la hora de entrada para guardar la marcación.');
       return;
     }
+    if (e.salida && e.salida <= e.entrada) {
+      this.notificaciones.error('Hora de salida no válida', `La salida debe ser posterior a la entrada (${e.entrada}).`);
+      return;
+    }
+    if (this.fecha === this.hoy && e.entrada > this.horaActual()) {
+      this.notificaciones.error('Hora no válida', 'No se puede registrar una hora futura.');
+      return;
+    }
     this.ocupado = true;
     try {
       const observacion = e.observacion.trim() || undefined;
@@ -158,6 +166,11 @@ export class AsistenciaPersonalComponent {
         this.filasReporte.map(f => [f.nombreCompleto, f.cargo, String(f.diasHabiles), String(f.diasAsistidos), String(f.porcentajeAsistencia),
           String(f.tardanzas), String(f.minutosTardeAcumulados), String(f.diasSinMarcar)]), `reporte-personal-${this.mes}.csv`);
     }
+  }
+
+  private horaActual(): string {
+    const ahora = new Date();
+    return `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
   }
 
   etiqueta(estado: EstadoPersonal): string {

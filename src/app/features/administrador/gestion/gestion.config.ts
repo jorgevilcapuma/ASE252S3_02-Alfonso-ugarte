@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { NombreIcono } from '../../../shared/components/icono/icono.component';
 
 /** Fila tal como la devuelve el backend. */
@@ -13,6 +14,8 @@ export interface CampoGestion {
   ancho?: boolean;
   ayuda?: string;
   maximo?: number;
+  /** Regla del campo (core/validacion/reglas.ts): devuelve el mensaje de error o null. */
+  validar?: (valor: string, formulario: Formulario, hoy: string) => string | null;
   /** Opciones fijas o las que se cargan del backend (aulas o docentes activos). */
   opciones?: { valor: string; etiqueta: string }[] | keyof Opciones;
 }
@@ -60,17 +63,17 @@ export const GESTION: Record<string, ConfigGestion> = {
       { etiqueta: 'CELULAR', principal: r => txt(r['celular']) || '—' }
     ],
     campos: [
-      { clave: 'nombres', etiqueta: 'Nombres', tipo: 'texto', requerido: true, maximo: 80 },
-      { clave: 'apellidos', etiqueta: 'Apellidos', tipo: 'texto', requerido: true, maximo: 80 },
-      { clave: 'dni', etiqueta: 'DNI', tipo: 'texto', requerido: true, maximo: 8, ayuda: '8 dígitos' },
+      { clave: 'nombres', etiqueta: 'Nombres', tipo: 'texto', requerido: true, maximo: 80, validar: v => R.nombre(v, 'Los nombres') },
+      { clave: 'apellidos', etiqueta: 'Apellidos', tipo: 'texto', requerido: true, maximo: 80, validar: v => R.nombre(v, 'Los apellidos') },
+      { clave: 'dni', etiqueta: 'DNI', tipo: 'texto', requerido: true, maximo: 8, ayuda: '8 dígitos', validar: R.dni },
       { clave: 'cargo', etiqueta: 'Cargo', tipo: 'select', requerido: true,
         opciones: ['Docente', 'Auxiliar', 'Administrativo', 'Directivo', 'Servicio'].map(c => ({ valor: c, etiqueta: c })) },
       { clave: 'sexo', etiqueta: 'Sexo', tipo: 'select', requerido: true, opciones: [{ valor: 'F', etiqueta: 'Femenino' }, { valor: 'M', etiqueta: 'Masculino' }] },
-      { clave: 'fechaIngreso', etiqueta: 'Fecha de ingreso', tipo: 'fecha' },
+      { clave: 'fechaIngreso', etiqueta: 'Fecha de ingreso', tipo: 'fecha', validar: (v, _, hoy) => R.fechaNoFutura(v, hoy) },
       { clave: 'especialidad', etiqueta: 'Especialidad', tipo: 'texto', maximo: 120 },
       { clave: 'area', etiqueta: 'Área', tipo: 'texto', maximo: 80 },
-      { clave: 'celular', etiqueta: 'Celular', tipo: 'texto', maximo: 9, ayuda: '9 dígitos, empieza con 9' },
-      { clave: 'correo', etiqueta: 'Correo (opcional)', tipo: 'email', maximo: 120, ancho: true,
+      { clave: 'celular', etiqueta: 'Celular', tipo: 'texto', maximo: 9, ayuda: '9 dígitos, empieza con 9', validar: R.celularOpcional },
+      { clave: 'correo', etiqueta: 'Correo (opcional)', tipo: 'email', maximo: 120, ancho: true, validar: R.correoOpcional,
         ayuda: 'Con cargo Docente, este correo crea su cuenta para ingresar (contraseña inicial 123456). No hace falta crearla en Usuarios.' }
     ],
     buscar: r => `${txt(r['nombreCompleto'])} ${txt(r['dni'])} ${txt(r['cargo'])} ${txt(r['especialidad'])}`,
@@ -96,13 +99,13 @@ export const GESTION: Record<string, ConfigGestion> = {
       { etiqueta: 'CONTACTO', principal: r => txt(r['telefono']) || '—', secundario: r => txt(r['correo']) }
     ],
     campos: [
-      { clave: 'nombres', etiqueta: 'Nombres', tipo: 'texto', requerido: true, maximo: 80 },
-      { clave: 'apellidos', etiqueta: 'Apellidos', tipo: 'texto', requerido: true, maximo: 80 },
-      { clave: 'dni', etiqueta: 'DNI', tipo: 'texto', requerido: true, maximo: 8, ayuda: '8 dígitos' },
+      { clave: 'nombres', etiqueta: 'Nombres', tipo: 'texto', requerido: true, maximo: 80, validar: v => R.nombre(v, 'Los nombres') },
+      { clave: 'apellidos', etiqueta: 'Apellidos', tipo: 'texto', requerido: true, maximo: 80, validar: v => R.nombre(v, 'Los apellidos') },
+      { clave: 'dni', etiqueta: 'DNI', tipo: 'texto', requerido: true, maximo: 8, ayuda: '8 dígitos', validar: R.dni },
       { clave: 'gradoSeccionId', etiqueta: 'Grado y sección', tipo: 'select', requerido: true, opciones: 'aulas' },
       { clave: 'genero', etiqueta: 'Género', tipo: 'select', opciones: [{ valor: '', etiqueta: 'Sin indicar' }, { valor: 'F', etiqueta: 'Femenino' }, { valor: 'M', etiqueta: 'Masculino' }] },
-      { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'texto', maximo: 20 },
-      { clave: 'correo', etiqueta: 'Correo (opcional)', tipo: 'email', maximo: 120, ancho: true,
+      { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'texto', maximo: 20, validar: R.telefonoOpcional },
+      { clave: 'correo', etiqueta: 'Correo (opcional)', tipo: 'email', maximo: 120, ancho: true, validar: R.correoOpcional,
         ayuda: 'Solo como dato de contacto. El alumno ingresa al portal con su nombre completo y su DNI.' }
     ],
     buscar: r => `${txt(r['nombre'])} ${txt(r['dni'])} ${txt(r['gradoEtiqueta'])} ${txt(r['seccion'])} ${txt(r['nivel'])}`,
@@ -126,7 +129,7 @@ export const GESTION: Record<string, ConfigGestion> = {
       { etiqueta: 'DOCENTE', principal: r => txt(r['docenteNombre']) }
     ],
     campos: [
-      { clave: 'nombre', etiqueta: 'Nombre del curso', tipo: 'texto', requerido: true, maximo: 120, ancho: true },
+      { clave: 'nombre', etiqueta: 'Nombre del curso', tipo: 'texto', requerido: true, maximo: 120, ancho: true, validar: v => R.texto(v, 3, 'El nombre del curso') },
       { clave: 'gradoSeccionId', etiqueta: 'Grado y sección', tipo: 'select', requerido: true, opciones: 'aulas' },
       { clave: 'docenteId', etiqueta: 'Docente', tipo: 'select', requerido: true, opciones: 'docentes' }
     ],
@@ -149,8 +152,8 @@ export const GESTION: Record<string, ConfigGestion> = {
     ],
     campos: [
       { clave: 'nivel', etiqueta: 'Nivel', tipo: 'select', requerido: true, opciones: ['Inicial', 'Primaria', 'Secundaria'].map(n => ({ valor: n, etiqueta: n })) },
-      { clave: 'grado', etiqueta: 'Grado', tipo: 'texto', requerido: true, maximo: 10, ayuda: 'Inicial: "3 años"… · Primaria: 1 a 6 · Secundaria: 1 a 5' },
-      { clave: 'seccion', etiqueta: 'Sección', tipo: 'texto', requerido: true, maximo: 1, ayuda: 'Una letra: A, B, C…' },
+      { clave: 'grado', etiqueta: 'Grado', tipo: 'texto', requerido: true, maximo: 10, ayuda: 'Inicial: 3 a 5 años · Primaria: 1 a 6 · Secundaria: 1 a 5', validar: (v, f) => R.gradoEnNivel(f['nivel'], v) },
+      { clave: 'seccion', etiqueta: 'Sección', tipo: 'texto', requerido: true, maximo: 1, ayuda: 'Una letra: A, B, C…', validar: R.seccion },
       { clave: 'turno', etiqueta: 'Turno', tipo: 'select',
         opciones: [{ valor: '', etiqueta: 'Automático (la C es de tarde)' }, { valor: 'Mañana', etiqueta: 'Mañana' }, { valor: 'Tarde', etiqueta: 'Tarde' }] }
     ],

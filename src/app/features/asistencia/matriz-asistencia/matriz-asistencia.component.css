@@ -54,3 +54,5 @@
   .month-table .sticky-name { min-width: 180px; }
 }
 .rules-hint { margin-top: 6px; color: var(--color-muted); font-size: 13px; }
+.aula-vacia { margin: 0 0 12px; }
+.form-grid .wide { grid-column: 1 / -1; }

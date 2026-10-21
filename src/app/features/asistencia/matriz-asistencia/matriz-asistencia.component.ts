@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -6,6 +7,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EstadoAsistencia, Estudiante, NivelEducativo } from '../../../core/models/asistencia.model';
 import { ApiService } from '../../../core/services/api.service';
 import { AsistenciaService } from '../../../core/services/asistencia.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ModoDatosService } from '../../../core/services/modo-datos.service';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 import { IconoComponent } from '../../../shared/components/icono/icono.component';
 
@@ -29,6 +32,9 @@ export class MatrizAsistenciaComponent {
   private readonly notificaciones = inject(NotificacionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
+  private readonly modo = inject(ModoDatosService);
 
   readonly estadosRegistro: EstadoAsistencia[] = ['presente', 'tardanza', 'falta', 'justificado'];
   readonly letra = LETRA;
@@ -44,6 +50,11 @@ export class MatrizAsistenciaComponent {
   estudianteId = '';
   motivo = '';
   mostrarFormulario = false;
+
+  /** Alta rápida de un estudiante en el aula visible (solo el administrador registra estudiantes). */
+  nuevoEstudiante: { nombres: string; apellidos: string; dni: string; genero: string; correo: string } | null = null;
+  guardandoEstudiante = false;
+  errorEstudiante = '';
 
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
@@ -81,6 +92,41 @@ export class MatrizAsistenciaComponent {
   private diasDelMesFinal(mes: string): string {
     const dias = this.data.diasDelMes(mes);
     return dias[dias.length - 1];
+  }
+
+  get puedeAgregarEstudiantes(): boolean { return this.auth.sesion?.perfil === 'administrador' && !this.modo.esLocal; }
+
+  abrirNuevoEstudiante(): void {
+    this.errorEstudiante = '';
+    this.nuevoEstudiante = { nombres: '', apellidos: '', dni: '', genero: '', correo: '' };
+  }
+
+  async guardarEstudiante(): Promise<void> {
+    const e = this.nuevoEstudiante;
+    const seccionId = this.data.seccionId(this.nivel, this.grado, this.seccion);
+    if (!e || !seccionId || this.guardandoEstudiante) return;
+    const nombres = e.nombres.trim(), apellidos = e.apellidos.trim(), dni = e.dni.trim();
+    const error = R.primero(R.nombre(nombres, 'Los nombres'), R.nombre(apellidos, 'Los apellidos'), R.dni(dni), R.correoOpcional(e.correo));
+    if (error) { this.errorEstudiante = error; return; }
+    this.guardandoEstudiante = true;
+    this.errorEstudiante = '';
+    try {
+      await this.api.post('/estudiantes', {
+        nombres, apellidos, dni, gradoSeccionId: Number(seccionId),
+        genero: e.genero || null, correo: e.correo.trim() || null
+      });
+      this.nuevoEstudiante = null;
+      await this.data.recargarEstructura();
+      await this.data.cargarEstudiantes();
+      this.notificaciones.exito('Estudiante registrado', `${nombres} ${apellidos} ingresa al portal como Alumno con su nombre completo y su DNI ${dni}.`);
+    } catch (error) {
+      this.errorEstudiante = ApiService.mensaje(error);
+    }
+    this.guardandoEstudiante = false;
+  }
+
+  soloDigitosDni(): void {
+    if (this.nuevoEstudiante) this.nuevoEstudiante.dni = this.nuevoEstudiante.dni.replace(/\D/g, '').slice(0, 8);
   }
 
   get grados(): string[] { return this.data.gradosPorNivel[this.nivel]; }
@@ -201,6 +247,12 @@ export class MatrizAsistenciaComponent {
   }
 
   async guardarJustificacion(): Promise<void> {
+    const invalido = R.primero(this.estudianteId ? null : 'Selecciona el estudiante.', R.diaHabil(this.fecha),
+      R.fechaNoFutura(this.fecha, this.data.hoy), R.texto(this.motivo, 5, 'El motivo'));
+    if (invalido) {
+      this.notificaciones.error('Revisa la justificación', invalido);
+      return;
+    }
     const error = await this.data.registrarJustificacion(this.estudianteId, this.fecha, this.motivo);
     if (error) {
       this.notificaciones.error('No se registró la justificación', error);

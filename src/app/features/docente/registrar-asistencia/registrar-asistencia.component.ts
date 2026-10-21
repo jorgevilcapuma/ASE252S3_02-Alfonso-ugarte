@@ -1,3 +1,4 @@
+import * as R from '../../../core/validacion/reglas';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -75,8 +76,10 @@ export class RegistrarAsistenciaComponent {
   }
 
   async guardarAsistencia() {
-    if (this.fecha > this.docenteService.hoy) {
-      this.notificaciones.error('Fecha no válida', 'No se puede registrar asistencia de una fecha futura.');
+    const invalido = R.primero(this.cursoId ? null : 'Selecciona el curso.', R.diaHabil(this.fecha),
+      this.fecha > this.docenteService.hoy ? 'No se puede registrar asistencia de una fecha futura.' : null);
+    if (invalido) {
+      this.notificaciones.error('Fecha no válida', invalido);
       return;
     }
     if (this.guardando) return;

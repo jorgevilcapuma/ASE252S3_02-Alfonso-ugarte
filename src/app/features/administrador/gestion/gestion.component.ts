@@ -23,7 +23,7 @@ type FiltroEstado = 'A' | 'I' | 'T';
 })
 export class GestionComponent {
   private readonly api = inject(ApiService);
-  private readonly data = inject(AsistenciaService);
+  readonly data = inject(AsistenciaService);
   private readonly notificaciones = inject(NotificacionService);
   readonly modo = inject(ModoDatosService);
   readonly config: ConfigGestion = GESTION[inject(ActivatedRoute).snapshot.data['entidad'] as string];
@@ -41,6 +41,8 @@ export class GestionComponent {
   formulario: Formulario | null = null;
   editandoId: number | null = null;
   guardando = false;
+  /** Error de cada campo del formulario (se muestra debajo del campo). */
+  errores: Record<string, string> = {};
   porEliminar: Registro | null = null;
 
   constructor() {
@@ -70,6 +72,7 @@ export class GestionComponent {
   async abrir(registro?: Registro): Promise<void> {
     await this.cargarOpciones();
     this.editandoId = registro?.id ?? null;
+    this.errores = {};
     this.formulario = Object.fromEntries(this.config.campos.map(c => {
       const valor = registro?.[c.clave];
       const inicial = c.tipo === 'select' && c.requerido && !registro ? this.opcionesDe(c)[0]?.valor ?? '' : '';
@@ -80,9 +83,15 @@ export class GestionComponent {
   async guardar(): Promise<void> {
     const f = this.formulario;
     if (!f || this.guardando) return;
-    const faltante = this.config.campos.find(c => c.requerido && !f[c.clave]?.trim());
-    if (faltante) {
-      this.notificaciones.error('Faltan datos', `Completa el campo "${faltante.etiqueta}".`);
+    this.errores = {};
+    for (const campo of this.config.campos) {
+      const valor = f[campo.clave] ?? '';
+      const error = campo.requerido && !valor.trim() ? `Completa el campo "${campo.etiqueta}".` : campo.validar?.(valor, f, this.data.hoy) ?? null;
+      if (error) this.errores[campo.clave] = error;
+    }
+    const conError = this.config.campos.find(c => this.errores[c.clave]);
+    if (conError) {
+      document.getElementById(`campo-${conError.clave}`)?.focus();
       return;
     }
     this.guardando = true;
@@ -120,6 +129,14 @@ export class GestionComponent {
     if (r['usuarioId'] && !teniaCuenta) return `Cuenta creada: ingresa como ${cuenta.perfil} con ${String(r['correo'])} y la contraseña 123456.`;
     if (r['usuarioId']) return `Ingresa como ${cuenta.perfil} con ${String(r['correo'])}.`;
     return cuenta.sinCorreo;
+  }
+
+  /** Al corregir un campo se quita su mensaje de error. */
+  limpiarError(clave: string): void {
+    if (this.errores[clave]) {
+      const { [clave]: _, ...resto } = this.errores;
+      this.errores = resto;
+    }
   }
 
   nombre(r: Registro): string {

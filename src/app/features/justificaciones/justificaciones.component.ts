@@ -64,8 +64,8 @@ export class JustificacionesComponent {
 
   async revisar(justificacion: Justificacion, estado: 'Aprobada' | 'Observada'): Promise<void> {
     const observacion = this.observaciones[justificacion.id]?.trim();
-    if (estado === 'Observada' && !observacion) {
-      this.mensaje = `Escribe una observación para devolver la solicitud de ${justificacion.estudianteNombre}.`;
+    if (estado === 'Observada' && (!observacion || observacion.length < 5)) {
+      this.mensaje = `Escribe una observación (al menos 5 caracteres) para devolver la solicitud de ${justificacion.estudianteNombre}.`;
       return;
     }
     if (this.revisando !== null) return;
