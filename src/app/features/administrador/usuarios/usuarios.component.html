@@ -70,6 +70,9 @@
             <td class="muted">{{ usuario.creado }}</td>
             <td class="num">
               <div class="row-buttons">
+                <!-- NUEVO BOTÓN DE VER DETALLES -->
+                <button type="button" class="icon-button" title="Ver detalles" [attr.aria-label]="'Ver detalles de ' + usuario.nombre" (click)="verDetalles(usuario)"><app-icono nombre="ojo" [tamano]="17" /></button>
+                
                 <button type="button" class="icon-button" title="Editar" [attr.aria-label]="'Editar ' + usuario.nombre" (click)="editar(usuario)"><app-icono nombre="editar" [tamano]="17" /></button>
                 <button type="button" class="icon-button is-danger" title="Eliminar" [attr.aria-label]="'Eliminar ' + usuario.nombre" (click)="porEliminar = usuario"><app-icono nombre="papelera" [tamano]="17" /></button>
               </div>
@@ -83,6 +86,7 @@
   </div>
 </section>
 
+<!-- MODAL DE EDITAR -->
 @if (modalAbierto) {
   <div class="modal-backdrop" (click)="modalAbierto = false">
     <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()">
@@ -114,6 +118,58 @@
   </div>
 }
 
+<!-- NUEVO MODAL DE VER DETALLES (REDISEÑADO) -->
+@if (usuarioDetalle) {
+  <div class="modal-backdrop" (click)="usuarioDetalle = null">
+    <div class="modal detalle-modal" (click)="$event.stopPropagation()">
+      
+      <!-- Cabecera con degradado institucional -->
+      <div class="detalle-header">
+        <button class="detalle-close" type="button" aria-label="Cerrar" (click)="usuarioDetalle = null">×</button>
+        
+        <div class="avatar avatar-large" [class.avatar-red]="usuarioDetalle.perfil === 'administrador'" [class.avatar-gold]="usuarioDetalle.perfil === 'docente'" [class.avatar-blue]="usuarioDetalle.perfil === 'alumno'">
+          {{ iniciales(usuarioDetalle.nombre) }}
+        </div>
+        <h2>{{ usuarioDetalle.nombre }}</h2>
+        <span class="role-tag badge-perfil" [attr.data-perfil]="usuarioDetalle.perfil">{{ etiquetas[usuarioDetalle.perfil] }}</span>
+      </div>
+
+      <!-- Cuerpo con los datos -->
+      <div class="detalle-body">
+        
+        <div class="detalle-item">
+          <span class="detalle-label">Correo Institucional</span>
+          <span class="detalle-value">{{ usuarioDetalle.correo }}</span>
+        </div>
+
+        <div class="detalle-item">
+          <span class="detalle-label">Estado de la cuenta</span>
+          <span class="detalle-value estado" [class.activo]="usuarioDetalle.estado === 'Activo'">
+            <span class="dot" [class.active]="usuarioDetalle.estado === 'Activo'"></span>
+            {{ usuarioDetalle.estado }}
+          </span>
+        </div>
+
+        <div class="detalle-item">
+          <span class="detalle-label">Fecha de creación</span>
+          <span class="detalle-value">{{ usuarioDetalle.creado }}</span>
+        </div>
+
+      </div>
+
+      <!-- Footer con botones -->
+      <div class="detalle-footer">
+        <button class="button button-outline" type="button" (click)="usuarioDetalle = null">Cerrar</button>
+        <button class="button button-primary" type="button" (click)="editar(usuarioDetalle)">
+          <app-icono nombre="editar" [tamano]="16" /> Editar Perfil
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- MODAL DE ELIMINAR -->
 @if (porEliminar) {
   <div class="modal-backdrop" (click)="porEliminar = null">
     <div class="modal confirm-modal" (click)="$event.stopPropagation()" role="alertdialog" aria-modal="true">

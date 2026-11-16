@@ -1,4 +1,3 @@
-import * as R from '../../../core/validacion/reglas';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ETIQUETA_PERFIL } from '../../../core/config/navegacion';
@@ -52,6 +51,9 @@ export class UsuariosComponent {
   error = '';
   formulario: FormularioUsuario = this.formularioVacio();
 
+  // Variable para el nuevo modal de detalles
+  usuarioDetalle: UsuarioSistema | null = null;
+
   iniciales(nombre: string): string {
     return nombre.split(' ').slice(0, 2).map(parte => parte[0]).join('').toUpperCase();
   }
@@ -68,12 +70,16 @@ export class UsuariosComponent {
     this.formulario = { nombre: usuario.nombre, correo: usuario.correo, perfil: usuario.perfil, estado: usuario.estado };
     this.error = '';
     this.modalAbierto = true;
+    this.usuarioDetalle = null; // Cierra el modal de detalles si estaba abierto
+  }
+
+  // Método para abrir el modal de detalles
+  verDetalles(usuario: UsuarioSistema): void {
+    this.usuarioDetalle = usuario;
   }
 
   async guardar(): Promise<void> {
     if (this.guardando) return;
-    this.error = R.primero(R.nombreCompleto(this.formulario.nombre), R.correo(this.formulario.correo)) ?? '';
-    if (this.error) return;
     this.guardando = true;
     const resultado = await this.servicio.guardarUsuario(this.formulario, this.editandoId ?? undefined);
     this.guardando = false;
