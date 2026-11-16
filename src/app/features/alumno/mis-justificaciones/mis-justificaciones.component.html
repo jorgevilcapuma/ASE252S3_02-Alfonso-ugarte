@@ -62,6 +62,7 @@
       <span>MOTIVO / CURSO</span>
       <span>SUSTENTO</span>
       <span>ESTADO</span>
+      <span>ACCIONES</span> <!-- Nueva columna -->
     </div>
 
     @for (item of solicitudes; track item.id) {
@@ -84,6 +85,12 @@
           >
             {{ etiquetaEstado(item.estado) }}
           </span>
+        </div>
+        <div>
+          <!-- Botón para abrir el modal de detalles -->
+          <button class="button button-quiet btn-detalle" type="button" (click)="abrirDetalle(item)">
+            Ver detalle
+          </button>
         </div>
       </article>
     } @empty {
@@ -110,6 +117,7 @@
   </div>
 }
 
+<!-- MODAL DE NUEVA SOLICITUD -->
 @if (mostrarFormulario) {
   <div class="modal-backdrop" (click)="mostrarFormulario = false">
     <section
@@ -165,6 +173,74 @@
       </div>
 
       <small class="student-local-file-note">Se registra el nombre del archivo; entrega el documento original al colegio si te lo solicitan.</small>
+    </section>
+  </div>
+}
+
+<!-- NUEVO MODAL DE DETALLES -->
+@if (solicitudSeleccionada) {
+  <div class="modal-backdrop" (click)="cerrarDetalle()">
+    <section
+      class="modal modal-detalle"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow">DETALLE DE LA SOLICITUD</span>
+          <h2>Justificación del {{ formatearFecha(solicitudSeleccionada.fecha) }}</h2>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()">×</button>
+      </div>
+
+      <div class="detalle-grid">
+        <div>
+          <strong>Curso:</strong>
+          <p>{{ obtenerNombreCurso(solicitudSeleccionada.cursoId) }}</p>
+        </div>
+        
+        <div>
+          <strong>Estado actual:</strong>
+          <p>
+            <span
+              class="review-status"
+              [class.review-pending]="solicitudSeleccionada.estado === 'Pendiente'"
+              [class.review-approved]="solicitudSeleccionada.estado === 'Aprobada'"
+              [class.review-observed]="solicitudSeleccionada.estado === 'Observada'"
+            >
+              {{ etiquetaEstado(solicitudSeleccionada.estado) }}
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <strong>Motivo registrado:</strong>
+          <p class="detalle-motivo">{{ solicitudSeleccionada.motivo }}</p>
+        </div>
+
+        <div>
+          <strong>Sustento adjunto:</strong>
+          <p>
+            @if (solicitudSeleccionada.archivoNombre) {
+              <span class="file-badge">📎 {{ solicitudSeleccionada.archivoNombre }}</span>
+            } @else {
+              <span class="muted">No se adjuntó archivo.</span>
+            }
+          </p>
+        </div>
+
+        @if (solicitudSeleccionada.estado === 'Observada' && solicitudSeleccionada.observacion) {
+          <div class="detalle-observacion">
+            <strong>Observación del colegio (Motivo de rechazo):</strong>
+            <p>{{ solicitudSeleccionada.observacion }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="modal-actions">
+        <button class="button button-primary" type="button" (click)="cerrarDetalle()">Entendido</button>
+      </div>
     </section>
   </div>
 }

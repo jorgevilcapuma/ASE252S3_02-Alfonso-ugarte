@@ -164,18 +164,13 @@
   outline: none;
 }
 
-/* Tabla Estructurada */
-.student-requests-table {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
+/* =========================================
+   Tabla Estructurada (ACTUALIZADA A 5 COLUMNAS)
+   ========================================= */
 .student-request-table-head {
   display: grid;
-  grid-template-columns: 140px 1fr 180px 130px;
+  /* Ajustado para 5 columnas: Fecha, Motivo, Sustento, Estado, Acciones */
+  grid-template-columns: 120px 1fr 140px 110px 100px; 
   gap: 16px;
   padding: 12px 16px;
   background: var(--color-surface-2);
@@ -188,7 +183,7 @@
 
 .student-request-table-row {
   display: grid;
-  grid-template-columns: 140px 1fr 180px 130px;
+  grid-template-columns: 120px 1fr 140px 110px 100px;
   gap: 16px;
   padding: 16px;
   align-items: center;
@@ -254,7 +249,7 @@
   margin-bottom: 4px;
 }
 
-/* 4. Modal */
+/* 4. Modal (Base) */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -371,6 +366,84 @@
   text-align: center;
 }
 
+/* =========================================
+   ESTILOS PARA EL MODAL DE DETALLE Y EL BOTÓN (NUEVOS)
+   ========================================= */
+.btn-detalle {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #f1f3f8;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 600;
+}
+
+.btn-detalle:hover {
+  background: #e2e8f0;
+}
+
+.modal-detalle {
+  max-width: 550px;
+}
+
+.detalle-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.detalle-grid strong {
+  display: block;
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detalle-grid p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-ink);
+}
+
+.detalle-motivo {
+  background: var(--color-surface-2);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-line);
+  line-height: 1.5;
+}
+
+.file-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.detalle-observacion {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.detalle-observacion strong {
+  color: #b91c1c;
+}
+
+.detalle-observacion p {
+  color: #7f1d1d;
+  font-style: italic;
+}
+
 /* 5. Avisos y Toast */
 .notice-box {
   display: flex;
@@ -428,7 +501,9 @@
   background: #059669;
 }
 
-/* Adaptación Responsiva */
+/* =========================================
+   Adaptación Responsiva (ACTUALIZADA)
+   ========================================= */
 @media (max-width: 768px) {
   .student-page-heading {
     flex-direction: column;
@@ -440,6 +515,20 @@
 
   .student-request-table-row {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 12px;
+    padding: 20px 16px;
+  }
+  
+  .student-request-table-row > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .student-request-table-row > div::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--color-muted);
+    font-size: 12px;
   }
 }

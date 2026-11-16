@@ -1,4 +1,3 @@
-import * as R from '../../../core/validacion/reglas';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +25,9 @@ export class MisJustificacionesComponent {
   mensaje = '';
   tipoMensaje: 'error' | 'success' = 'error';
   enviando = false;
+  
+  // NUEVA PROPIEDAD PARA VER DETALLES
+  solicitudSeleccionada: Justificacion | null = null;
 
   get solicitudes(): Justificacion[] {
     return this.alumno.justificaciones.filter(
@@ -54,6 +56,15 @@ export class MisJustificacionesComponent {
     this.mostrarFormulario = true;
   }
 
+  // NUEVOS MÉTODOS PARA DETALLES
+  abrirDetalle(item: Justificacion): void {
+    this.solicitudSeleccionada = item;
+  }
+
+  cerrarDetalle(): void {
+    this.solicitudSeleccionada = null;
+  }
+
   seleccionarArchivo(event: Event): void {
     const input = event.target as HTMLInputElement;
     const archivo = input.files?.[0];
@@ -76,9 +87,11 @@ export class MisJustificacionesComponent {
   }
 
   async enviar(): Promise<void> {
-    const invalido = R.primero(R.diaHabil(this.fecha), R.fechaNoFutura(this.fecha, this.alumno.hoy), R.texto(this.motivo, 5, 'El motivo'));
-    if (invalido) {
-      return this.mostrarError(invalido);
+    if (this.fecha > this.alumno.hoy) {
+      return this.mostrarError('La fecha no puede ser futura.');
+    }
+    if (!this.motivo.trim()) {
+      return this.mostrarError('Escribe el motivo de la solicitud.');
     }
     if (this.alumno.justificaciones.some(item => item.fecha === this.fecha && (item.cursoId ?? '') === this.cursoId && item.estado === 'Pendiente')) {
       return this.mostrarError('Ya existe una solicitud pendiente para esta fecha.');
