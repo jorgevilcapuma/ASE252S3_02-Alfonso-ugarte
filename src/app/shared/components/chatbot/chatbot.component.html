@@ -1,0 +1,46 @@
+<button class="chat-toggle-btn" (click)="toggleChat()" [class.abierto]="abierto()" aria-label="Abrir asistente virtual">
+  <span *ngIf="!abierto()">💬</span>
+  <span *ngIf="abierto()">✖</span>
+</button>
+
+<div class="chat-window" *ngIf="abierto()">
+  
+  <!-- Cabecera con gradiente -->
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="bot-avatar">🤖</div>
+      <div>
+        <h3>Asistente Virtual</h3>
+        <p>En línea</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cuerpo del chat -->
+  <div class="chat-body">
+    <!-- Historial de mensajes -->
+    <div *ngFor="let msg of mensajes()" class="mensaje" [class.bot]="msg.emisor === 'bot'" [class.usuario]="msg.emisor === 'usuario'">
+      <div class="burbuja">{{ msg.texto }}</div>
+    </div>
+
+    <!-- Indicador de "escribiendo..." -->
+    <div *ngIf="escribiendo()" class="mensaje bot">
+      <div class="burbuja escribiendo-burbuja">
+        <span class="punto"></span>
+        <span class="punto"></span>
+        <span class="punto"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preguntas frecuentes -->
+  <div class="chat-footer">
+    <p class="sugerencias-titulo">Preguntas frecuentes:</p>
+    <div class="sugerencias">
+      <button *ngFor="let opcion of opciones()" (click)="enviarPregunta(opcion)" class="sugerencia-btn">
+        {{ opcion.pregunta }}
+      </button>
+    </div>
+  </div>
+
+</div>

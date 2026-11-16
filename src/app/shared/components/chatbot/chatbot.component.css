@@ -1,0 +1,215 @@
+/* =========================================
+   BOTÓN FLOTANTE
+   ========================================= */
+.chat-toggle-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b1c1c 0%, #b92b27 50%, #e6a817 100%); /* Degradado del Dashboard */
+  color: white;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(139, 28, 28, 0.4);
+  z-index: 9999;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-toggle-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(139, 28, 28, 0.6);
+}
+
+.chat-toggle-btn.abierto {
+  background: #333;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* =========================================
+   VENTANA DEL CHAT
+   ========================================= */
+.chat-window {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   CABECERA (ESTILO DASHBOARD)
+   ========================================= */
+.chat-header {
+  background: linear-gradient(135deg, #8b1c1c 0%, #b92b27 50%, #e6a817 100%);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+/* Un pequeño destello para que se parezca al banner original */
+.chat-header::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+.chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.bot-avatar {
+  background: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.chat-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.chat-header p { margin: 2px 0 0 0; font-size: 12px; opacity: 0.95; color: #facc15; font-weight: 500; }
+
+/* =========================================
+   CUERPO DEL CHAT
+   ========================================= */
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mensaje { display: flex; }
+.mensaje.bot { justify-content: flex-start; }
+.mensaje.usuario { justify-content: flex-end; }
+
+.burbuja {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.mensaje.bot .burbuja {
+  background: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #eaeaea;
+}
+
+.mensaje.usuario .burbuja {
+  background: linear-gradient(135deg, #8b1c1c 0%, #b92b27 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+/* =========================================
+   ANIMACIÓN DE ESCRIBIENDO (PUNTITOS)
+   ========================================= */
+.escribiendo-burbuja {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  min-width: 60px;
+}
+
+.punto {
+  width: 6px;
+  height: 6px;
+  background-color: #a0a0a0;
+  border-radius: 50%;
+  display: inline-block;
+  animation: rebote 1.4s infinite ease-in-out both;
+}
+
+.punto:nth-child(1) { animation-delay: -0.32s; }
+.punto:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes rebote {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* =========================================
+   PIE Y PREGUNTAS FRECUENTES
+   ========================================= */
+.chat-footer {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #eee;
+}
+
+.sugerencias-titulo {
+  font-size: 11px;
+  color: #666;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.sugerencias {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sugerencia-btn {
+  background: #f1f3f5;
+  border: 1px solid #e2e8f0;
+  color: #333;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.sugerencia-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateX(3px);
+}

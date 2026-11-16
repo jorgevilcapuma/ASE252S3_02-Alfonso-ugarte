@@ -11,13 +11,21 @@ import { TemaService } from '../../core/services/tema.service';
 import { AlumnoService } from '../../features/alumno/alumno.service';
 import { DocenteService } from '../../features/docente/docente.service';
 import { IconoComponent } from '../../shared/components/icono/icono.component';
+import { ChatbotComponent } from '../../shared/components/chatbot/chatbot.component'; // <-- IMPORTADO
 
 type InfoPie = 'soporte' | 'privacidad' | 'manual';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [DatePipe, RouterLink, RouterLinkActive, RouterOutlet, IconoComponent],
+  imports: [
+    DatePipe, 
+    RouterLink, 
+    RouterLinkActive, 
+    RouterOutlet, 
+    IconoComponent,
+    ChatbotComponent // <-- AÑADIDO A LOS IMPORTS
+  ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.css'
 })
@@ -30,7 +38,6 @@ export class ShellComponent {
   private readonly notificaciones = inject(NotificacionService);
   private readonly host = inject(ElementRef<HTMLElement>);
 
-  /** Estado visual: menú móvil, menú de usuario, barra de carga, reloj y ventana informativa del pie. */
   readonly menuAbierto = signal(false);
   readonly menuUsuario = signal(false);
   readonly cargando = signal(false);
@@ -39,7 +46,6 @@ export class ShellComponent {
   readonly anio = new Date().getFullYear();
 
   constructor() {
-    // Datos del perfil desde el backend: el menú se dibuja de inmediato y las pantallas se completan al llegar.
     if (this.perfil === 'alumno') {
       void this.data.asegurarBase();
       void inject(AlumnoService).asegurar();
@@ -82,7 +88,6 @@ export class ShellComponent {
   get muestraAlertas(): boolean { return this.perfil !== 'alumno'; }
   get rutaAlertas(): string { return this.perfil === 'docente' ? '/docente/alertas' : '/administrador/alertas'; }
 
-  /** "I.E. 20191 Alfonso Ugarte" → código en una línea y nombre en la siguiente. */
   get marca(): { codigo: string; nombre: string } {
     const nombre = this.data.nombreInstitucion.trim();
     const coincidencia = nombre.match(/^(I\.?\s?E\.?\s*N?°?\s*\d+)\s*(.*)$/i);
@@ -109,7 +114,6 @@ export class ShellComponent {
     this.infoPie.set(null);
   }
 
-  /** Cierra el menú de usuario al hacer clic fuera de él. */
   @HostListener('document:click', ['$event'])
   clicFuera(evento: MouseEvent): void {
     if (!this.menuUsuario()) return;

@@ -1,0 +1,13 @@
+pe\edu\vallegrande\app\PruebaApi.class
+pe\edu\vallegrande\app\PruebaApi$RelojFijo.class
+pe\edu\vallegrande\app\UtilidadesTest.class
+pe\edu\vallegrande\app\GradoSeccionCursoTest.class
+pe\edu\vallegrande\app\AutenticacionTest.class
+pe\edu\vallegrande\app\UsuarioTest.class
+pe\edu\vallegrande\app\DocenteTest.class
+pe\edu\vallegrande\app\CuentasAccesoTest.class
+pe\edu\vallegrande\app\AsistenciaEstudianteTest.class
+pe\edu\vallegrande\app\AsistenciaPersonalTest.class
+pe\edu\vallegrande\app\EstudianteTest.class
+pe\edu\vallegrande\app\DatosDemoTest.class
+pe\edu\vallegrande\app\JustificacionTest.class
